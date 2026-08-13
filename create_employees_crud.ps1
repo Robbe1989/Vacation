@@ -1,4 +1,4 @@
-# create_employees_crud.ps1
+﻿# create_employees_crud.ps1
 Set-StrictMode -Version Latest
 
 function Write-TextFile($path, $content) {
@@ -403,5 +403,64 @@ namespace VacationApp.Forms
         private System.Windows.Forms.DataGridViewTextBoxColumn colEmail;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDepartment;
         private System.Windows.Forms.DataGridViewTextBoxColumn colStartDate;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colFte
-
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFte;
+        private System.Windows.Forms.Button btnAdd, btnEdit, btnDelete, btnRefresh;
+    }
+}
+'@
+
+# Update MainForm to add menu that opens EmployeesForm
+Write-TextFile "VacationApp/MainForm.cs" @'
+using System;
+using System.Windows.Forms;
+using VacationApp.Forms;
+
+namespace VacationApp
+{
+    public partial class MainForm : Form
+    {
+        public MainForm()
+        {
+            InitializeComponent();
+            AddMenu();
+        }
+
+        private void AddMenu()
+        {
+            var menu = new MenuStrip();
+            var menuMitarbeiter = new ToolStripMenuItem("Mitarbeiter");
+            var menuOpen = new ToolStripMenuItem("Verwalten");
+            menuOpen.Click += (s, e) =>
+            {
+                using var f = new EmployeesForm();
+                f.ShowDialog(this);
+            };
+            menuMitarbeiter.DropDownItems.Add(menuOpen);
+            menu.Items.Add(menuMitarbeiter);
+            this.MainMenuStrip = menu;
+            this.Controls.Add(menu);
+            menu.Dock = DockStyle.Top;
+        }
+    }
+}
+'@
+
+# Update README
+Write-TextFile "README.md" (Get-Content -Raw "README.md") -ErrorAction SilentlyContinue
+$readme = @'
+## Mitarbeiterverwaltung (MVP)
+
+Dieses Update fügt eine einfache Mitarbeiterverwaltung mit SQLite‑Speicherung hinzu.
+
+- Menü: Mitarbeiter → Verwalten
+- SQLite‑Datenbank: vacation.db im Programmordner
+- CRUD: Hinzufügen, Bearbeiten, Löschen
+'@
+
+Add-Content -Path "README.md" -Value $readme
+
+# git add, commit, push
+git add -A
+git commit -m "Feature: Mitarbeiter CRUD + SQLite storage (EmployeesForm, EmployeeEditForm, Database helper, model)"
+git push origin main
+Write-Host "Fertig: Dateien erstellt und gepusht (falls Push-Rechte vorhanden)."

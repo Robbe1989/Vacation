@@ -12,3 +12,11 @@ Wie du eine .exe bekommst:
 
 Weiteres:
 Ich baue die vollständige Anwendung (Mitarbeiterverwaltung, Feiertage, Ferien, Excel-Import/Export, Statistik) als nächsten Schritt auf dieses Grundgerüst auf, wenn du das möchtest.
+
+## Mitarbeiterverwaltung (MVP)
+
+Dieses Update fügt eine einfache Mitarbeiterverwaltung mit SQLite‑Speicherung hinzu.
+
+- Menü: Mitarbeiter → Verwalten
+- SQLite‑Datenbank: vacation.db im Programmordner
+- CRUD: Hinzufügen, Bearbeiten, Löschen
