@@ -1,4 +1,9 @@
 ﻿name: Build Windows single-file .exe and create Release
+
+# Erlaube dem GITHUB_TOKEN Schreibzugriff auf repository contents (benötigt für create-release / upload)
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
