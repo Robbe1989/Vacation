@@ -26,7 +26,7 @@ jobs:
         run: dotnet restore VacationApp/VacationApp.csproj
 
       - name: Publish single-file executable (win-x64)
-        run: dotnet publish VacationApp/VacationApp.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=false /p:EnableCompressionInSingleFile=false -o ${{ github.workspace }}\\publish
+        run: dotnet publish VacationApp/VacationApp.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=false -o ${{ github.workspace }}\\publish
 
       - name: List publish folder
         run: dir ${{ github.workspace }}\\publish

@@ -1,0 +1,152 @@
+{
+  "version": 2,
+  "dgSpecHash": "A7D97iI2Xt4=",
+  "success": false,
+  "projectFilePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+  "expectedPackageFiles": [],
+  "logs": [
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Nager.Date (>= 2.44.0)\" kann für \"net8.0-windows\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Nager.Date",
+      "targetGraphs": [
+        "net8.0-windows"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"ClosedXML (>= 0.104.0)\" kann für \"net8.0-windows\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "ClosedXML",
+      "targetGraphs": [
+        "net8.0-windows"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"System.Data.SQLite.Core (>= 1.0.118)\" kann für \"net8.0-windows\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "System.Data.SQLite.Core",
+      "targetGraphs": [
+        "net8.0-windows"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Nager.Date (>= 2.44.0)\" kann für \"net8.0-windows/win-x64\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Nager.Date",
+      "targetGraphs": [
+        "net8.0-windows/win-x64"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"ClosedXML (>= 0.104.0)\" kann für \"net8.0-windows/win-x64\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "ClosedXML",
+      "targetGraphs": [
+        "net8.0-windows/win-x64"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"System.Data.SQLite.Core (>= 1.0.118)\" kann für \"net8.0-windows/win-x64\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "System.Data.SQLite.Core",
+      "targetGraphs": [
+        "net8.0-windows/win-x64"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.NETCore.App.Ref (= 8.0.30)\" kann für \"net8.0-windows7.0\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Microsoft.NETCore.App.Ref",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.NETCore.App.Runtime.win-x64 (= 8.0.30)\" kann für \"net8.0-windows7.0\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Microsoft.NETCore.App.Runtime.win-x64",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.WindowsDesktop.App.Ref (= 8.0.30)\" kann für \"net8.0-windows7.0\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Microsoft.WindowsDesktop.App.Ref",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.WindowsDesktop.App.Runtime.win-x64 (= 8.0.30)\" kann für \"net8.0-windows7.0\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.AspNetCore.App.Ref (= 8.0.30)\" kann für \"net8.0-windows7.0\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Microsoft.AspNetCore.App.Ref",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.AspNetCore.App.Runtime.win-x64 (= 8.0.30)\" kann für \"net8.0-windows7.0\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Microsoft.AspNetCore.App.Runtime.win-x64",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.NETCore.App.Host.win-x64 (= 8.0.30)\" kann für \"net8.0-windows7.0\" nicht aufgelöst werden.",
+      "projectPath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "filePath": "C:\\Users\\r.haussmann\\vacation\\VacationApp\\VacationApp.csproj",
+      "libraryId": "Microsoft.NETCore.App.Host.win-x64",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    }
+  ]
+}
