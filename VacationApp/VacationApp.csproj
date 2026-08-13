@@ -1,14 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Nager.Date" Version="3.0.2" />
-    <PackageReference Include="ClosedXML" Version="0.103.1" />
+    <!-- Nager.Date: benutze die auf nuget.org verfügbare Version -->
+    <PackageReference Include="Nager.Date" Version="2.44.0" />
+    <!-- ClosedXML: neuere Version (restore hatte 0.104.0 gewählt) -->
+    <PackageReference Include="ClosedXML" Version="0.104.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
   </ItemGroup>
 </Project>

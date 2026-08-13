@@ -15,16 +15,16 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: "7.0.x"
+          dotnet-version: '8.0.x'
 
       - name: Restore
         run: dotnet restore VacationApp/VacationApp.csproj
 
       - name: Publish single-file executable (win-x64)
-        run: dotnet publish VacationApp/VacationApp.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=false -o ${{ github.workspace }}\publish
+        run: dotnet publish VacationApp/VacationApp.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=false -o ${{ github.workspace }}\\publish
 
       - name: List publish folder
-        run: dir ${{ github.workspace }}\publish
+        run: dir ${{ github.workspace }}\\publish
 
       - name: Create Release
         id: create_release
