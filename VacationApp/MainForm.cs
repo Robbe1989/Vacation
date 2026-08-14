@@ -7,65 +7,42 @@ namespace VacationApp
 {
     public partial class MainForm : Form
     {
-	private Button btnEmployeesVisible;
         public MainForm()
-{
-    InitializeComponent();
-
-    // initialisiere btnEmployeesVisible, falls noch nicht existent
-    btnEmployeesVisible = new System.Windows.Forms.Button();
-    btnEmployeesVisible.Text = "Mitarbeiter";
-    btnEmployeesVisible.Size = new System.Drawing.Size(140, 36);
-    btnEmployeesVisible.Click += (s, e) =>
-    {
-        using var f = new VacationApp.Forms.EmployeesForm();
-        f.ShowDialog(this);
-    };
-    this.Controls.Add(btnEmployeesVisible);
-    // positioniere zentriert (nutze deine bestehende Methode, falls vorhanden)
-    CenterEmployeesButton();
-
-    AddMenu(); // falls du das Menü dort erzeugst
-}
+        {
+            InitializeComponent();
+            AddMenu();
+        }
 
         private void AddMenu()
-{
-    // MainForm.cs — im AddMenu() oder direkt im Konstruktor nach InitializeComponent()
-var menu = new MenuStrip();
-// ... erstelle Menü-Items wie gewohnt ...
-menu.Dock = DockStyle.Top;
-this.MainMenuStrip = menu;
-
-// Controls.Add(menu) möglichst VOR anderen Controls, damit Menu oben in Z bleibt
-this.Controls.Add(menu);
-// bring menu to front in case other controls overlap
-menu.BringToFront();
-
-// Falls es ein grosses Titellabel gibt, verschiebe es unter das Menü:
-foreach (Control c in this.Controls)
-{
-    if (c is Label lbl)
-    {
-        var txt = (lbl.Text ?? "").ToLowerInvariant();
-        if (txt.Contains("vacation planner") || txt.Contains("urlaub") || txt.Contains("platzhalter"))
         {
-            // Abstand = menühöhe + 6px
-            lbl.Top = menu.Height + 6;
-            lbl.BringToFront(); // falls du möchtest dass der Title sichtbar bleibt
-            break;
+            var menu = new MenuStrip();
+
+            // Mitarbeiter Menü
+            var menuMitarbeiter = new ToolStripMenuItem("Mitarbeiter");
+            var menuOpen = new ToolStripMenuItem("Verwalten");
+            menuOpen.Click += (s, e) =>
+            {
+                using var f = new Forms.EmployeesForm();
+                f.ShowDialog(this);
+            };
+            menuMitarbeiter.DropDownItems.Add(menuOpen);
+            menu.Items.Add(menuMitarbeiter);
+
+            // Optionen Menü
+            var menuOptions = new ToolStripMenuItem("Optionen");
+            var menuDepartments = new ToolStripMenuItem("Abteilungen");
+            menuDepartments.Click += (s, e) =>
+            {
+                using var f = new Forms.DepartmentsForm();
+                f.ShowDialog(this);
+            };
+            menuOptions.DropDownItems.Add(menuDepartments);
+            menu.Items.Add(menuOptions);
+
+            menu.Dock = DockStyle.Top;
+            this.MainMenuStrip = menu;
+            this.Controls.Add(menu);
+            menu.BringToFront();
         }
-    }
-}
-
-private void CenterEmployeesButton()
-{
-    if (btnEmployeesVisible == null) return;
-
-    int topOffset = (this.MainMenuStrip != null && this.MainMenuStrip.Visible) ? this.MainMenuStrip.Height + 8 : 40;
-
-    var x = Math.Max(12, (this.ClientSize.Width - btnEmployeesVisible.Width) / 2);
-    var y = Math.Max(topOffset, (this.ClientSize.Height - btnEmployeesVisible.Height) / 2);
-    btnEmployeesVisible.Location = new Point(x, y);
-}
     }
 }
