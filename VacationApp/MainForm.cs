@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Windows.Forms;
 using VacationApp.Forms;
+using System.Drawing;
 
 namespace VacationApp
 {
     public partial class MainForm : Form
     {
+	private Button btnEmployeesVisible;
         public MainForm()
         {
             InitializeComponent();
