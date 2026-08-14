@@ -17,33 +17,31 @@ namespace VacationApp
         private void AddMenu()
 {
     var menu = new MenuStrip();
+
     var menuMitarbeiter = new ToolStripMenuItem("Mitarbeiter");
     var menuOpen = new ToolStripMenuItem("Verwalten");
     menuOpen.Click += (s, e) =>
     {
-        using var f = new EmployeesForm();
+        using var f = new VacationApp.Forms.EmployeesForm();
         f.ShowDialog(this);
     };
     menuMitarbeiter.DropDownItems.Add(menuOpen);
     menu.Items.Add(menuMitarbeiter);
 
-    // Dock oben und als Hauptmenü setzen
+    var menuSettings = new ToolStripMenuItem("Einstellungen");
+    var menuDepartments = new ToolStripMenuItem("Abteilungen");
+    menuDepartments.Click += (s, e) =>
+    {
+        using var f = new VacationApp.Forms.DepartmentsForm();
+        f.ShowDialog(this);
+    };
+    menuSettings.DropDownItems.Add(menuDepartments);
+    menu.Items.Add(menuSettings);
+
     menu.Dock = DockStyle.Top;
     this.MainMenuStrip = menu;
-
-    // Controls.Add hinterher einfügen und sicher stellen, dass das Menu im Vordergrund ist
     this.Controls.Add(menu);
-    this.Controls.SetChildIndex(menu, 0); // Menu zuerst in Controls-Zugreihenfolge
     menu.BringToFront();
-
-    // Falls es ein Title-Label gibt, verschiebe es unter das Menu (robuste Erkennung)
-    var title = this.Controls.OfType<System.Windows.Forms.Label>()
-                  .FirstOrDefault(l => (l.Text ?? "").StartsWith("Vacation Planner", StringComparison.OrdinalIgnoreCase));
-    if (title != null)
-    {
-        title.Top = menu.Height + 6;
-        title.BringToFront(); // falls du willst, dass Titel sichtbar bleibt
-    }
 }
 
 private void CenterEmployeesButton()
