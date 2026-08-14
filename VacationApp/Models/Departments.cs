@@ -9,6 +9,7 @@ namespace VacationApp.Models
         public bool UseFte { get; set; } = true;
         public string FteOptionsRaw { get; set; } = "";
 
+        // Returns (Label, Value) pairs parsed from FteOptionsRaw ("Label=Value" per line)
         public IEnumerable<(string Label, double Value)> GetFteOptions()
         {
             var list = new List<(string, double)>();

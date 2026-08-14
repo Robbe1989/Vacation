@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-using VacationApp.Forms;
-using System.Drawing;
+
 namespace VacationApp
 {
     public partial class MainForm : Form
@@ -29,13 +28,13 @@ namespace VacationApp
 
             // Optionen Menü
             var menuOptions = new ToolStripMenuItem("Optionen");
-            var menuDepartments = new ToolStripMenuItem("Abteilungen");
-            menuDepartments.Click += (s, e) =>
+            var menuOptionsOpen = new ToolStripMenuItem("Optionen");
+            menuOptionsOpen.Click += (s, e) =>
             {
-                using var f = new Forms.DepartmentsForm();
+                using var f = new Forms.OptionsForm();
                 f.ShowDialog(this);
             };
-            menuOptions.DropDownItems.Add(menuDepartments);
+            menuOptions.DropDownItems.Add(menuOptionsOpen);
             menu.Items.Add(menuOptions);
 
             menu.Dock = DockStyle.Top;

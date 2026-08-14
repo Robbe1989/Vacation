@@ -47,6 +47,14 @@ namespace VacationApp.Data
                     FteOptionsRaw TEXT
                 );";
 
+            var createMetrics = @"
+                CREATE TABLE IF NOT EXISTS Metrics (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    KeyName TEXT NOT NULL UNIQUE,
+                    DisplayName TEXT NOT NULL,
+                    UseMetric INTEGER NOT NULL DEFAULT 1
+                );";
+
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = createEmployees;
@@ -54,8 +62,21 @@ namespace VacationApp.Data
 
                 cmd.CommandText = createDepartments;
                 cmd.ExecuteNonQuery();
+
+                cmd.CommandText = createMetrics;
+                cmd.ExecuteNonQuery();
             }
 
+            // Ensure default metric 'fte' exists with DisplayName 'VZÄ'
+            using (var upsert = conn.CreateCommand())
+            {
+                upsert.CommandText = @"
+                    INSERT OR IGNORE INTO Metrics (KeyName, DisplayName, UseMetric)
+                    VALUES ('fte','VZÄ',1);";
+                upsert.ExecuteNonQuery();
+            }
+
+            // Ensure UseFte column exists in legacy DBs (safe no-op if already present)
             using (var checkCmd = conn.CreateCommand())
             {
                 checkCmd.CommandText = "PRAGMA table_info(Employees);";
@@ -209,6 +230,59 @@ namespace VacationApp.Data
             cmd.CommandText = "DELETE FROM Departments WHERE Id = @id;";
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
+        }
+
+        // Metrics CRUD (global settings for metrics e.g. 'fte' -> display 'VZÄ')
+        public static List<Metric> GetAllMetrics()
+        {
+            var list = new List<Metric>();
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, KeyName, DisplayName, UseMetric FROM Metrics ORDER BY KeyName;";
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                list.Add(new Metric
+                {
+                    Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
+                    Key = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
+                    DisplayName = rdr.IsDBNull(2) ? "" : rdr.GetString(2),
+                    Use = !rdr.IsDBNull(3) && Convert.ToInt32(rdr[3]) != 0
+                });
+            }
+            return list;
+        }
+
+        public static bool GetMetricUse(string key)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT UseMetric FROM Metrics WHERE KeyName = @k LIMIT 1;";
+            cmd.Parameters.AddWithValue("@k", key);
+            var r = cmd.ExecuteScalar();
+            if (r == null || r == DBNull.Value) return false;
+            return Convert.ToInt32(r) != 0;
+        }
+
+        public static void UpdateMetric(Metric m)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            // try update
+            cmd.CommandText = "UPDATE Metrics SET DisplayName=@display, UseMetric=@use WHERE KeyName=@k;";
+            cmd.Parameters.AddWithValue("@display", m.DisplayName ?? m.Key);
+            cmd.Parameters.AddWithValue("@use", m.Use ? 1 : 0);
+            cmd.Parameters.AddWithValue("@k", m.Key);
+            var affected = cmd.ExecuteNonQuery();
+            if (affected == 0)
+            {
+                // insert
+                cmd.CommandText = "INSERT INTO Metrics (KeyName, DisplayName, UseMetric) VALUES (@k, @display, @use);";
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using System.Linq;
 using System.Windows.Forms;
 using VacationApp.Data;
 using VacationApp.Models;
@@ -15,6 +14,9 @@ namespace VacationApp.Forms
         {
             InitializeComponent();
 
+            // Ensure DB initialized (safe)
+            Database.Init();
+
             // Load departments into cmbDepartment
             var depts = Database.GetAllDepartments();
             cmbDepartment.Items.Clear();
@@ -24,10 +26,9 @@ namespace VacationApp.Forms
             if (cmbDepartment.Items.Count > 0)
                 cmbDepartment.SelectedIndex = 0;
 
-            // Hook events
             cmbDepartment.SelectedIndexChanged += CmbDepartment_SelectedIndexChanged;
 
-            // Load FTE options for selected department (or defaults)
+            // load initial FTE options
             LoadFteOptions(cmbDepartment.SelectedItem?.ToString());
 
             if (e == null)
@@ -47,6 +48,17 @@ namespace VacationApp.Forms
                 chkUseFte.Checked = Employee.UseFte;
                 LoadFteOptions(Employee.Department);
                 SelectFteByValue(Employee.Fte);
+            }
+
+            // Respect global metric switch: if 'fte' metric disabled, hide VZÄ controls
+            var globalUseFte = Database.GetMetricUse("fte");
+            if (!globalUseFte)
+            {
+                chkUseFte.Visible = false;
+                cmbFte.Visible = false;
+                label5.Visible = false;
+                // ensure Employee.UseFte is false so saving doesn't use VZÄ
+                if (Employee != null) Employee.UseFte = false;
             }
 
             cmbFte.Enabled = chkUseFte.Checked;
@@ -112,6 +124,7 @@ namespace VacationApp.Forms
 
         private bool TryParseFteLabel(string label, out double value)
         {
+            // search department options
             foreach (var d in Database.GetAllDepartments())
             {
                 foreach (var kv in d.GetFteOptions())
@@ -124,12 +137,11 @@ namespace VacationApp.Forms
                 }
             }
 
-            // fallback: try parse number in percent or decimal
+            // fallback parsing: percent or decimal inside parentheses
             value = 1.0;
             var pIdx = label.IndexOf('%');
             if (pIdx > 0)
             {
-                // try extract number before %
                 var start = label.LastIndexOf(' ', pIdx) + 1;
                 var num = label.Substring(start, pIdx - start).Trim(' ', '(', ')');
                 if (double.TryParse(num, NumberStyles.Any, CultureInfo.InvariantCulture, out var pct))
@@ -139,7 +151,6 @@ namespace VacationApp.Forms
                 }
             }
 
-            // try decimal in parentheses
             var open = label.IndexOf('(');
             var close = label.IndexOf(')');
             if (open >= 0 && close > open)

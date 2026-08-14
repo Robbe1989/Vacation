@@ -31,7 +31,7 @@ namespace VacationApp.Forms
             // columns
             this.colDeptId.HeaderText = "Id"; this.colDeptId.Name = "colDeptId"; this.colDeptId.Visible = false;
             this.colDeptName.HeaderText = "Name"; this.colDeptName.Name = "colDeptName"; this.colDeptName.Width = 350;
-            this.colDeptUseFte.HeaderText = "FTE aktiv"; this.colDeptUseFte.Name = "colDeptUseFte"; this.colDeptUseFte.Width = 80;
+            this.colDeptUseFte.HeaderText = "VZÄ aktiv"; this.colDeptUseFte.Name = "colDeptUseFte"; this.colDeptUseFte.Width = 80;
             // buttons
             this.btnAdd.Location = new System.Drawing.Point(12,340); this.btnAdd.Name = "btnAdd"; this.btnAdd.Size = new System.Drawing.Size(90,28); this.btnAdd.Text = "Hinzufügen"; this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
             this.btnEdit.Location = new System.Drawing.Point(108,340); this.btnEdit.Name = "btnEdit"; this.btnEdit.Size = new System.Drawing.Size(90,28); this.btnEdit.Text = "Bearbeiten"; this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);

@@ -16,12 +16,12 @@ namespace VacationApp.Forms
             // txtName
             this.txtName.Location = new System.Drawing.Point(110,12); this.txtName.Name = "txtName"; this.txtName.Size = new System.Drawing.Size(300,23);
             // chkUseFte
-            this.chkUseFte.Location = new System.Drawing.Point(110,41); this.chkUseFte.Name = "chkUseFte"; this.chkUseFte.Size = new System.Drawing.Size(100,24); this.chkUseFte.Text = "FTE aktiv";
+            this.chkUseFte.Location = new System.Drawing.Point(110,41); this.chkUseFte.Name = "chkUseFte"; this.chkUseFte.Size = new System.Drawing.Size(100,24); this.chkUseFte.Text = "VZÄ aktiv";
             // txtFteOptions
             this.txtFteOptions.Location = new System.Drawing.Point(110,70); this.txtFteOptions.Multiline = true; this.txtFteOptions.Name = "txtFteOptions"; this.txtFteOptions.Size = new System.Drawing.Size(300,120);
             // labels
             this.label1.AutoSize = true; this.label1.Location = new System.Drawing.Point(12,15); this.label1.Text = "Name:";
-            this.label2.AutoSize = true; this.label2.Location = new System.Drawing.Point(12,73); this.label2.Text = "FTE‑Optionen (Label=Value zeilenweise):";
+            this.label2.AutoSize = true; this.label2.Location = new System.Drawing.Point(12,73); this.label2.Text = "VZÄ‑Optionen (Label=Value zeilenweise):";
             // buttons
             this.btnOk.Location = new System.Drawing.Point(254,200); this.btnOk.Name = "btnOk"; this.btnOk.Size = new System.Drawing.Size(75,25); this.btnOk.Text = "OK"; this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             this.btnCancel.Location = new System.Drawing.Point(334,200); this.btnCancel.Name = "btnCancel"; this.btnCancel.Size = new System.Drawing.Size(75,25); this.btnCancel.Text = "Abbrechen"; this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);

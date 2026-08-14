@@ -19,7 +19,7 @@ namespace VacationApp.Forms
             this.label1 = new System.Windows.Forms.Label(); // Name
             this.label2 = new System.Windows.Forms.Label(); // E-Mail
             this.label3 = new System.Windows.Forms.Label(); // Abteilung
-            this.label5 = new System.Windows.Forms.Label(); // Vollzeitäquivalent
+            this.label5 = new System.Windows.Forms.Label(); // VZÄ
             this.btnOk = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
 
@@ -40,11 +40,11 @@ namespace VacationApp.Forms
             this.cmbDepartment.Name = "cmbDepartment";
             this.cmbDepartment.Size = new System.Drawing.Size(220, 23);
 
-            // chkUseFte
+            // chkUseFte (VZÄ verwenden)
             this.chkUseFte.Location = new System.Drawing.Point(110, 99);
             this.chkUseFte.Name = "chkUseFte";
             this.chkUseFte.Size = new System.Drawing.Size(140, 24);
-            this.chkUseFte.Text = "FTE verwenden";
+            this.chkUseFte.Text = "VZÄ verwenden";
             this.chkUseFte.Checked = true;
             this.chkUseFte.CheckedChanged += new System.EventHandler(this.chkUseFte_CheckedChanged);
 
@@ -59,7 +59,7 @@ namespace VacationApp.Forms
             this.label1.AutoSize = true; this.label1.Location = new System.Drawing.Point(12, 15); this.label1.Text = "Name:";
             this.label2.AutoSize = true; this.label2.Location = new System.Drawing.Point(12, 44); this.label2.Text = "E-Mail:";
             this.label3.AutoSize = true; this.label3.Location = new System.Drawing.Point(12, 73); this.label3.Text = "Abteilung:";
-            this.label5.AutoSize = true; this.label5.Location = new System.Drawing.Point(12, 132); this.label5.Text = "Vollzeitäquivalent:";
+            this.label5.AutoSize = true; this.label5.Location = new System.Drawing.Point(12, 132); this.label5.Text = "VZÄ:";
 
             // btnOk
             this.btnOk.Location = new System.Drawing.Point(234, 165);
