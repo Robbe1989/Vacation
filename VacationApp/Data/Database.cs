@@ -21,16 +21,13 @@ namespace VacationApp.Data
 
         public static void Init()
         {
-            // Ensure folder exists
             var dir = Path.GetDirectoryName(DbFile);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
-            // Open connection first, then create/alter tables
             using var conn = GetConnection();
             conn.Open();
 
-            // Create Employees with UseFte included (safe for fresh DBs)
             var createEmployees = @"
                 CREATE TABLE IF NOT EXISTS Employees (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +56,6 @@ namespace VacationApp.Data
                 cmd.ExecuteNonQuery();
             }
 
-            // If existing DB lacked UseFte in Employees, ensure column exists (safe no-op if present)
             using (var checkCmd = conn.CreateCommand())
             {
                 checkCmd.CommandText = "PRAGMA table_info(Employees);";
@@ -96,24 +92,16 @@ namespace VacationApp.Data
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
-                var e = new Employee();
-                e.Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]);
-                e.Name = rdr.IsDBNull(1) ? "" : rdr.GetString(1);
-                e.Email = rdr.IsDBNull(2) ? "" : rdr.GetString(2);
-                e.Department = rdr.IsDBNull(3) ? "" : rdr.GetString(3);
-                e.Fte = rdr.IsDBNull(4) ? 1.0 : Convert.ToDouble(rdr[4], CultureInfo.InvariantCulture);
-                if (!rdr.IsDBNull(5))
+                var e = new Employee
                 {
-                    if (DateTime.TryParse(rdr.GetString(5), out var dt))
-                        e.StartDate = dt;
-                    else
-                        e.StartDate = DateTime.Today;
-                }
-                else
-                {
-                    e.StartDate = DateTime.Today;
-                }
-                e.UseFte = !rdr.IsDBNull(6) && Convert.ToInt32(rdr[6]) != 0;
+                    Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
+                    Name = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
+                    Email = rdr.IsDBNull(2) ? "" : rdr.GetString(2),
+                    Department = rdr.IsDBNull(3) ? "" : rdr.GetString(3),
+                    Fte = rdr.IsDBNull(4) ? 1.0 : Convert.ToDouble(rdr[4], CultureInfo.InvariantCulture),
+                    StartDate = rdr.IsDBNull(5) ? DateTime.Today : DateTime.TryParse(rdr.GetString(5), out var dt) ? dt : DateTime.Today,
+                    UseFte = !rdr.IsDBNull(6) && Convert.ToInt32(rdr[6]) != 0
+                };
                 list.Add(e);
             }
             return list;

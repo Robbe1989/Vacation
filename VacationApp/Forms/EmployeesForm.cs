@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Windows.Forms;
 using VacationApp.Data;
 using VacationApp.Models;
@@ -21,8 +20,8 @@ namespace VacationApp.Forms
             dgvEmployees.Rows.Clear();
             foreach (var e in list)
             {
-                var idx = dgvEmployees.Rows.Add(e.Id, e.Name, e.Email, e.Department, e.Fte);
-                dgvEmployees.Rows[idx].Tag = e; // speichere komplettes Objekt für Edit/Delete
+                var idx = dgvEmployees.Rows.Add(e.Id, e.Name, e.Email, e.Department, e.Fte.ToString("0.00"), e.UseFte);
+                dgvEmployees.Rows[idx].Tag = e;
             }
         }
 
@@ -40,8 +39,7 @@ namespace VacationApp.Forms
         {
             if (dgvEmployees.SelectedRows.Count == 0) return;
             var row = dgvEmployees.SelectedRows[0];
-            var emp = row.Tag as Employee;
-            if (emp == null) return;
+            if (!(row.Tag is Employee emp)) return;
 
             using var dlg = new EmployeeEditForm(emp);
             if (dlg.ShowDialog() == DialogResult.OK)
@@ -55,8 +53,7 @@ namespace VacationApp.Forms
         {
             if (dgvEmployees.SelectedRows.Count == 0) return;
             var row = dgvEmployees.SelectedRows[0];
-            var emp = row.Tag as Employee;
-            if (emp == null) return;
+            if (!(row.Tag is Employee emp)) return;
 
             if (MessageBox.Show("Mitarbeiter wirklich löschen?", "Löschen", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {

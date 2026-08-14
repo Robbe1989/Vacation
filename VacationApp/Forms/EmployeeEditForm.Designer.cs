@@ -1,5 +1,4 @@
-﻿// Datei: VacationApp/Forms/EmployeeEditForm.Designer.cs
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
@@ -97,9 +96,7 @@ namespace VacationApp.Forms
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
-            {
                 components.Dispose();
-            }
             base.Dispose(disposing);
         }
 
