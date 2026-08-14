@@ -14,12 +14,13 @@ namespace VacationApp.Forms
             this.txtName = new System.Windows.Forms.TextBox();
             this.txtEmail = new System.Windows.Forms.TextBox();
             this.cmbDepartment = new System.Windows.Forms.ComboBox();
-            this.chkUseFte = new System.Windows.Forms.CheckBox();
-            this.cmbFte = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label(); // Name
             this.label2 = new System.Windows.Forms.Label(); // E-Mail
             this.label3 = new System.Windows.Forms.Label(); // Abteilung
-            this.label5 = new System.Windows.Forms.Label(); // VZÄ
+
+            this.label4 = new System.Windows.Forms.Label(); // Urlaubstage
+            this.nudVacationDays = new System.Windows.Forms.NumericUpDown();
+
             this.btnOk = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
 
@@ -40,52 +41,48 @@ namespace VacationApp.Forms
             this.cmbDepartment.Name = "cmbDepartment";
             this.cmbDepartment.Size = new System.Drawing.Size(220, 23);
 
-            // chkUseFte (VZÄ verwenden)
-            this.chkUseFte.Location = new System.Drawing.Point(110, 99);
-            this.chkUseFte.Name = "chkUseFte";
-            this.chkUseFte.Size = new System.Drawing.Size(140, 24);
-            this.chkUseFte.Text = "VZÄ verwenden";
-            this.chkUseFte.Checked = true;
-            this.chkUseFte.CheckedChanged += new System.EventHandler(this.chkUseFte_CheckedChanged);
-
-            // cmbFte
-            this.cmbFte.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbFte.FormattingEnabled = true;
-            this.cmbFte.Location = new System.Drawing.Point(110, 129);
-            this.cmbFte.Name = "cmbFte";
-            this.cmbFte.Size = new System.Drawing.Size(180, 23);
-
-            // labels
+            // label1..3
             this.label1.AutoSize = true; this.label1.Location = new System.Drawing.Point(12, 15); this.label1.Text = "Name:";
             this.label2.AutoSize = true; this.label2.Location = new System.Drawing.Point(12, 44); this.label2.Text = "E-Mail:";
             this.label3.AutoSize = true; this.label3.Location = new System.Drawing.Point(12, 73); this.label3.Text = "Abteilung:";
-            this.label5.AutoSize = true; this.label5.Location = new System.Drawing.Point(12, 132); this.label5.Text = "VZÄ:";
+
+            // label4 (Urlaubstage)
+            this.label4.AutoSize = true; this.label4.Location = new System.Drawing.Point(12, 104); this.label4.Text = "Urlaubstage:";
+
+            // nudVacationDays
+            ((System.ComponentModel.ISupportInitialize)(this.nudVacationDays)).BeginInit();
+            this.nudVacationDays.Location = new System.Drawing.Point(110, 102);
+            this.nudVacationDays.Name = "nudVacationDays";
+            this.nudVacationDays.Size = new System.Drawing.Size(80, 23);
+            this.nudVacationDays.Minimum = 0;
+            this.nudVacationDays.Maximum = 365;
+            this.nudVacationDays.Value = 20;
+            ((System.ComponentModel.ISupportInitialize)(this.nudVacationDays)).EndInit();
 
             // btnOk
-            this.btnOk.Location = new System.Drawing.Point(234, 165);
+            this.btnOk.Location = new System.Drawing.Point(234, 140);
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(75, 25);
             this.btnOk.Text = "OK";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
 
             // btnCancel
-            this.btnCancel.Location = new System.Drawing.Point(315, 165);
+            this.btnCancel.Location = new System.Drawing.Point(315, 140);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 25);
             this.btnCancel.Text = "Abbrechen";
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
 
             // Form settings
-            this.ClientSize = new System.Drawing.Size(402, 205);
+            this.ClientSize = new System.Drawing.Size(402, 180);
             this.Controls.Add(this.txtName);
             this.Controls.Add(this.txtEmail);
             this.Controls.Add(this.cmbDepartment);
-            this.Controls.Add(this.chkUseFte);
-            this.Controls.Add(this.cmbFte);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label3);
-            this.Controls.Add(this.label5);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.nudVacationDays);
             this.Controls.Add(this.btnOk);
             this.Controls.Add(this.btnCancel);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -103,9 +100,8 @@ namespace VacationApp.Forms
         private System.Windows.Forms.TextBox txtName;
         private System.Windows.Forms.TextBox txtEmail;
         private System.Windows.Forms.ComboBox cmbDepartment;
-        private System.Windows.Forms.CheckBox chkUseFte;
-        private System.Windows.Forms.ComboBox cmbFte;
-        private System.Windows.Forms.Label label1, label2, label3, label5;
+        private System.Windows.Forms.Label label1, label2, label3, label4;
+        private System.Windows.Forms.NumericUpDown nudVacationDays;
         private System.Windows.Forms.Button btnOk, btnCancel;
     }
 }

@@ -8,7 +8,6 @@ namespace VacationApp.Forms
             this.dgvDepartments = new System.Windows.Forms.DataGridView();
             this.colDeptId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDeptName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colDeptUseFte = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
@@ -21,7 +20,7 @@ namespace VacationApp.Forms
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvDepartments.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-                this.colDeptId, this.colDeptName, this.colDeptUseFte});
+                this.colDeptId, this.colDeptName});
             this.dgvDepartments.Location = new System.Drawing.Point(12,12);
             this.dgvDepartments.Name = "dgvDepartments";
             this.dgvDepartments.ReadOnly = true;
@@ -30,8 +29,7 @@ namespace VacationApp.Forms
             this.dgvDepartments.Size = new System.Drawing.Size(560,320);
             // columns
             this.colDeptId.HeaderText = "Id"; this.colDeptId.Name = "colDeptId"; this.colDeptId.Visible = false;
-            this.colDeptName.HeaderText = "Name"; this.colDeptName.Name = "colDeptName"; this.colDeptName.Width = 350;
-            this.colDeptUseFte.HeaderText = "VZÄ aktiv"; this.colDeptUseFte.Name = "colDeptUseFte"; this.colDeptUseFte.Width = 80;
+            this.colDeptName.HeaderText = "Name"; this.colDeptName.Name = "colDeptName"; this.colDeptName.Width = 500;
             // buttons
             this.btnAdd.Location = new System.Drawing.Point(12,340); this.btnAdd.Name = "btnAdd"; this.btnAdd.Size = new System.Drawing.Size(90,28); this.btnAdd.Text = "Hinzufügen"; this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
             this.btnEdit.Location = new System.Drawing.Point(108,340); this.btnEdit.Name = "btnEdit"; this.btnEdit.Size = new System.Drawing.Size(90,28); this.btnEdit.Text = "Bearbeiten"; this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
@@ -47,7 +45,6 @@ namespace VacationApp.Forms
         private System.Windows.Forms.DataGridView dgvDepartments;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDeptId;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDeptName;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn colDeptUseFte;
         private System.Windows.Forms.Button btnAdd, btnEdit, btnDelete;
     }
 }

@@ -20,7 +20,7 @@ namespace VacationApp.Forms
             dgvEmployees.Rows.Clear();
             foreach (var e in list)
             {
-                var idx = dgvEmployees.Rows.Add(e.Id, e.Name, e.Email, e.Department, e.Fte.ToString("0.00"), e.UseFte);
+                var idx = dgvEmployees.Rows.Add(e.Id, e.Name, e.Email, e.Department, e.VacationDays);
                 dgvEmployees.Rows[idx].Tag = e;
             }
         }

@@ -8,8 +8,9 @@ namespace VacationApp.Models
         public string Name { get; set; } = "";
         public string Email { get; set; } = "";
         public string Department { get; set; } = "";
-        public double Fte { get; set; } = 1.0; // internal numeric value
         public DateTime StartDate { get; set; } = DateTime.Today;
-        public bool UseFte { get; set; } = true; // whether this employee uses VZÄ
+
+        // Neu: Urlaubstage pro Mitarbeiter (Ganzzahl)
+        public int VacationDays { get; set; } = 20;
     }
 }

@@ -11,8 +11,8 @@
             this.colName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colEmail = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDepartment = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colFte = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colUseFte = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.colVacationDays = new System.Windows.Forms.DataGridViewTextBoxColumn();
+
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
@@ -26,7 +26,7 @@
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvEmployees.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.colId, this.colName, this.colEmail, this.colDepartment, this.colFte, this.colUseFte});
+            this.colId, this.colName, this.colEmail, this.colDepartment, this.colVacationDays});
             this.dgvEmployees.Location = new System.Drawing.Point(12, 12);
             this.dgvEmployees.MultiSelect = false;
             this.dgvEmployees.Name = "dgvEmployees";
@@ -37,11 +37,10 @@
 
             // Columns
             this.colId.HeaderText = "Id"; this.colId.Name = "colId"; this.colId.Visible = false;
-            this.colName.HeaderText = "Name"; this.colName.Name = "colName"; this.colName.Width = 220;
+            this.colName.HeaderText = "Name"; this.colName.Name = "colName"; this.colName.Width = 200;
             this.colEmail.HeaderText = "E-Mail"; this.colEmail.Name = "colEmail"; this.colEmail.Width = 180;
-            this.colDepartment.HeaderText = "Abteilung"; this.colDepartment.Name = "colDepartment"; this.colDepartment.Width = 120;
-            this.colFte.HeaderText = "VZÄ"; this.colFte.Name = "colFte"; this.colFte.Width = 60;
-            this.colUseFte.HeaderText = "VZÄ aktiv"; this.colUseFte.Name = "colUseFte"; this.colUseFte.Width = 60;
+            this.colDepartment.HeaderText = "Abteilung"; this.colDepartment.Name = "colDepartment"; this.colDepartment.Width = 160;
+            this.colVacationDays.HeaderText = "Urlaubstage"; this.colVacationDays.Name = "colVacationDays"; this.colVacationDays.Width = 80;
 
             // Buttons
             this.btnAdd.Location = new System.Drawing.Point(12, 405); this.btnAdd.Name = "btnAdd"; this.btnAdd.Size = new System.Drawing.Size(90, 28); this.btnAdd.Text = "Hinzufügen"; this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
@@ -61,8 +60,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colName;
         private System.Windows.Forms.DataGridViewTextBoxColumn colEmail;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDepartment;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colFte;
-        private System.Windows.Forms.DataGridViewCheckBoxColumn colUseFte;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVacationDays;
         private System.Windows.Forms.Button btnAdd, btnEdit, btnDelete, btnRefresh;
     }
 }

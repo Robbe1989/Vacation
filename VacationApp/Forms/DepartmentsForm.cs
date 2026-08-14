@@ -19,7 +19,7 @@ namespace VacationApp.Forms
             dgvDepartments.Rows.Clear();
             foreach (var d in list)
             {
-                var idx = dgvDepartments.Rows.Add(d.Id, d.Name, d.UseFte);
+                var idx = dgvDepartments.Rows.Add(d.Id, d.Name);
                 dgvDepartments.Rows[idx].Tag = d;
             }
         }

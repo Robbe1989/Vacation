@@ -14,22 +14,17 @@ namespace VacationApp.Forms
             if (d == null)
             {
                 Department = new Department();
-                chkUseFte.Checked = true;
             }
             else
             {
                 Department = d;
                 txtName.Text = d.Name;
-                chkUseFte.Checked = d.UseFte;
-                txtFteOptions.Text = d.FteOptionsRaw;
             }
         }
 
         private void btnOk_Click(object sender, EventArgs e)
         {
             Department.Name = txtName.Text.Trim();
-            Department.UseFte = chkUseFte.Checked;
-            Department.FteOptionsRaw = txtFteOptions.Text ?? "";
             DialogResult = DialogResult.OK;
             Close();
         }
