@@ -26,19 +26,30 @@ namespace VacationApp
             menuMitarbeiter.DropDownItems.Add(menuOpen);
             menu.Items.Add(menuMitarbeiter);
 
-            // Optionen Menü
+            // Optionen Menü (mit Untereinträgen: Einstellungen (Kennzahlen) und Abteilungen)
             var menuOptions = new ToolStripMenuItem("Optionen");
-            var menuOptionsOpen = new ToolStripMenuItem("Optionen");
-            menuOptionsOpen.Click += (s, e) =>
+
+            var menuSettings = new ToolStripMenuItem("Einstellungen");
+            menuSettings.Click += (s, e) =>
             {
                 using var f = new Forms.OptionsForm();
                 f.ShowDialog(this);
             };
-            menuOptions.DropDownItems.Add(menuOptionsOpen);
+            menuOptions.DropDownItems.Add(menuSettings);
+
+            var menuDepartments = new ToolStripMenuItem("Abteilungen");
+            menuDepartments.Click += (s, e) =>
+            {
+                using var f = new Forms.DepartmentsForm();
+                f.ShowDialog(this);
+            };
+            menuOptions.DropDownItems.Add(menuDepartments);
+
             menu.Items.Add(menuOptions);
 
             menu.Dock = DockStyle.Top;
             this.MainMenuStrip = menu;
+            // add menu before other controls to ensure z-order
             this.Controls.Add(menu);
             menu.BringToFront();
         }
