@@ -22,6 +22,29 @@ namespace VacationApp.Data
 
         public static void Init()
         {
+
+// Nach Erstellen der Tabellen (innerhalb der offenen Verbindung)
+using var checkCmd = conn.CreateCommand();
+checkCmd.CommandText = "PRAGMA table_info(Employees);";
+using var reader = checkCmd.ExecuteReader();
+bool hasUseFte = false;
+while (reader.Read())
+{
+    var colName = reader.GetString(reader.GetOrdinal("name"));
+    if (string.Equals(colName, "UseFte", StringComparison.OrdinalIgnoreCase))
+    {
+        hasUseFte = true;
+        break;
+    }
+}
+reader.Close();
+
+if (!hasUseFte)
+{
+    using var alter = conn.CreateCommand();
+    alter.CommandText = "ALTER TABLE Employees ADD COLUMN UseFte INTEGER NOT NULL DEFAULT 1;";
+    alter.ExecuteNonQuery();
+}
             // ensure folder exists (normally base dir exists)
             var dir = Path.GetDirectoryName(DbFile);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -70,15 +93,17 @@ namespace VacationApp.Data
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
-                var e = new Employee
-                {
-                    Id = rdr.GetInt32(0),
-                    Name = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
-                    Email = rdr.IsDBNull(2) ? "" : rdr.GetString(2),
-                    Department = rdr.IsDBNull(3) ? "" : rdr.GetString(3),
-                    Fte = rdr.IsDBNull(4) ? 1.0 : rdr.GetDouble(4),
-                    StartDate = rdr.IsDBNull(5) ? DateTime.Today : DateTime.Parse(rdr.GetString(5))
-                };
+// Auszug beim Lesen
+Employee e = new Employee
+{
+    Id = rdr.GetInt32(0),
+    Name = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
+    Email = rdr.IsDBNull(2) ? "" : rdr.GetString(2),
+    Department = rdr.IsDBNull(3) ? "" : rdr.GetString(3),
+    Fte = rdr.IsDBNull(4) ? 1.0 : rdr.GetDouble(4),
+    StartDate = rdr.IsDBNull(5) ? DateTime.Today : DateTime.Parse(rdr.GetString(5)),
+    UseFte = !rdr.IsDBNull(6) && rdr.GetInt32(6) != 0
+};
                 list.Add(e);
             }
             return list;
@@ -89,8 +114,8 @@ namespace VacationApp.Data
             using var conn = GetConnection();
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"INSERT INTO Employees (Name, Email, Department, Fte, StartDate)
-                                VALUES (@name,@email,@dept,@fte,@start);
+            cmd.CommandText = @"INSERT INTO Employees (Name, Email, Department, Fte, StartDate, UseFte)
+VALUES (@name,@email,@dept,@fte,@start,@useFte);
                                 SELECT last_insert_rowid();";
             cmd.Parameters.AddWithValue("@name", e.Name ?? "");
             cmd.Parameters.AddWithValue("@email", e.Email ?? "");
@@ -98,6 +123,7 @@ namespace VacationApp.Data
             cmd.Parameters.AddWithValue("@fte", e.Fte);
             cmd.Parameters.AddWithValue("@start", e.StartDate.ToString("yyyy-MM-dd"));
             var id = Convert.ToInt32(cmd.ExecuteScalar());
+
             return id;
         }
 
