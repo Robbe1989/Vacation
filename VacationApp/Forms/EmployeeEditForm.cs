@@ -149,5 +149,39 @@ namespace VacationApp.Forms
             DialogResult = DialogResult.Cancel;
             Close();
         }
+private void chkUseFte_CheckedChanged(object sender, EventArgs e)
+{
+    // Aktiviert/Deaktiviert das FTE‑Dropdown entsprechend der Checkbox.
+    // Wenn deaktiviert, wird das Dropdown ausgegraut und optional auf "Vollzeit (100%)" gesetzt.
+    try
+    {
+        var use = chkUseFte.Checked;
+        cmbFte.Enabled = use;
+
+        if (!use)
+        {
+            // optional: setze die Anzeige auf Vollzeit, damit beim Speichern ein gültiger Wert vorhanden ist
+            if (cmbFte.Items.Count > 0)
+            {
+                // versuche ein Label für Vollzeit zu finden, sonst erstes Item
+                int idx = -1;
+                for (int i = 0; i < cmbFte.Items.Count; i++)
+                {
+                    var s = cmbFte.Items[i]?.ToString() ?? "";
+                    if (s.Contains("Vollzeit") || s.Contains("100%"))
+                    {
+                        idx = i;
+                        break;
+                    }
+                }
+                cmbFte.SelectedIndex = idx >= 0 ? idx : 0;
+            }
+        }
+    }
+    catch
+    {
+        // Falls Controls zur Laufzeit (z. B. im Designer) noch null sind, einfach ignorieren
+    }
+}
     }
 }
