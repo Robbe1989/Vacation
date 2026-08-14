@@ -30,32 +30,31 @@ namespace VacationApp
 
         private void AddMenu()
 {
-    var menu = new MenuStrip();
+    // MainForm.cs — im AddMenu() oder direkt im Konstruktor nach InitializeComponent()
+var menu = new MenuStrip();
+// ... erstelle Menü-Items wie gewohnt ...
+menu.Dock = DockStyle.Top;
+this.MainMenuStrip = menu;
 
-    var menuMitarbeiter = new ToolStripMenuItem("Mitarbeiter");
-    var menuOpen = new ToolStripMenuItem("Verwalten");
-    menuOpen.Click += (s, e) =>
+// Controls.Add(menu) möglichst VOR anderen Controls, damit Menu oben in Z bleibt
+this.Controls.Add(menu);
+// bring menu to front in case other controls overlap
+menu.BringToFront();
+
+// Falls es ein grosses Titellabel gibt, verschiebe es unter das Menü:
+foreach (Control c in this.Controls)
+{
+    if (c is Label lbl)
     {
-        using var f = new VacationApp.Forms.EmployeesForm();
-        f.ShowDialog(this);
-    };
-    menuMitarbeiter.DropDownItems.Add(menuOpen);
-    menu.Items.Add(menuMitarbeiter);
-
-    var menuSettings = new ToolStripMenuItem("Einstellungen");
-    var menuDepartments = new ToolStripMenuItem("Abteilungen");
-    menuDepartments.Click += (s, e) =>
-    {
-        using var f = new VacationApp.Forms.DepartmentsForm();
-        f.ShowDialog(this);
-    };
-    menuSettings.DropDownItems.Add(menuDepartments);
-    menu.Items.Add(menuSettings);
-
-    menu.Dock = DockStyle.Top;
-    this.MainMenuStrip = menu;
-    this.Controls.Add(menu);
-    menu.BringToFront();
+        var txt = (lbl.Text ?? "").ToLowerInvariant();
+        if (txt.Contains("vacation planner") || txt.Contains("urlaub") || txt.Contains("platzhalter"))
+        {
+            // Abstand = menühöhe + 6px
+            lbl.Top = menu.Height + 6;
+            lbl.BringToFront(); // falls du möchtest dass der Title sichtbar bleibt
+            break;
+        }
+    }
 }
 
 private void CenterEmployeesButton()

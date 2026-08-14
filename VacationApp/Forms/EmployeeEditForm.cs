@@ -11,43 +11,42 @@ namespace VacationApp.Forms
     {
         public Employee Employee { get; private set; }
 
-        public EmployeeEditForm(Employee? e = null)
-        {
-            InitializeComponent();
+public EmployeeEditForm(Employee? e = null)
+{
+    InitializeComponent();
 
-            // Load departments into cmbDepartment
-            var depts = Database.GetAllDepartments();
-            cmbDepartment.Items.Clear();
-            foreach (var d in depts)
-                cmbDepartment.Items.Add(d.Name);
+    // load departments...
+    // Load default/initial FTE options...
+    // Event hookup
+    cmbDepartment.SelectedIndexChanged += CmbDepartment_SelectedIndexChanged;
 
-            // if there are departments, select first by default
-            if (cmbDepartment.Items.Count > 0)
-                cmbDepartment.SelectedIndex = 0;
+    if (e == null)
+    {
+        Employee = new Employee();
+        // default: UseFte true (oder wie gewünscht)
+        chkUseFte.Checked = Employee.UseFte;
+    }
+    else
+    {
+        Employee = e;
+        txtName.Text = Employee.Name;
+        txtEmail.Text = Employee.Email;
 
-            // load default FTE options (will be replaced when department selected)
-            LoadFteOptions(null);
+        // select department if present
+        if (!string.IsNullOrEmpty(Employee.Department) && cmbDepartment.Items.Contains(Employee.Department))
+            cmbDepartment.SelectedItem = Employee.Department;
 
-            if (e == null)
-            {
-                Employee = new Employee();
-                Employee.StartDate = DateTime.Today; // stored but not editable
-            }
-            else
-            {
-                Employee = e;
-                txtName.Text = Employee.Name;
-                txtEmail.Text = Employee.Email;
+        // UseFte load
+        chkUseFte.Checked = Employee.UseFte;
 
-                if (!string.IsNullOrEmpty(Employee.Department) && cmbDepartment.Items.Contains(Employee.Department))
-                    cmbDepartment.SelectedItem = Employee.Department;
+        // load FTE options for department and select matching value
+        LoadFteOptions(Employee.Department);
+        SelectFteByValue(Employee.Fte);
+    }
 
-                // try to select FTE matching value
-                SelectFteByValue(Employee.Fte);
-            }
-
-            cmbDepartment.SelectedIndexChanged += CmbDepartment_SelectedIndexChanged;
-        }
+    // ensure cmbFte enabled state matches checkbox
+    cmbFte.Enabled = chkUseFte.Checked;
+}
 
         private void CmbDepartment_SelectedIndexChanged(object? sender, EventArgs e)
         {
@@ -149,6 +148,35 @@ namespace VacationApp.Forms
             DialogResult = DialogResult.Cancel;
             Close();
         }
+private void chkUseFte_CheckedChanged(object sender, EventArgs e)
+{
+    cmbFte.Enabled = chkUseFte.Checked;
+}
+
+private void btnOk_Click(object sender, EventArgs e)
+{
+    Employee.Name = txtName.Text.Trim();
+    Employee.Email = txtEmail.Text.Trim();
+    Employee.Department = cmbDepartment.SelectedItem?.ToString() ?? "";
+
+    Employee.UseFte = chkUseFte.Checked;
+
+    if (Employee.UseFte)
+    {
+        var sel = cmbFte.SelectedItem?.ToString();
+        if (!string.IsNullOrEmpty(sel) && TryParseFteLabel(sel, out var fv))
+            Employee.Fte = fv;
+        else
+            Employee.Fte = 1.0;
+    }
+    else
+    {
+        Employee.Fte = 1.0; // normalize / fallback
+    }
+
+    DialogResult = DialogResult.OK;
+    Close();
+}
 private void chkUseFte_CheckedChanged(object sender, EventArgs e)
 {
     // Aktiviert/Deaktiviert das FTE‑Dropdown entsprechend der Checkbox.
