@@ -1,4 +1,5 @@
-﻿using System;
+﻿// name=VacationApp/Data/Database.cs
+using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Globalization;
@@ -28,7 +29,6 @@ namespace VacationApp.Data
             using var conn = GetConnection();
             conn.Open();
 
-            // Employees now includes VacationDays
             var createEmployees = @"
                 CREATE TABLE IF NOT EXISTS Employees (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,6 +45,16 @@ namespace VacationApp.Data
                     Name TEXT NOT NULL
                 );";
 
+            var createVacations = @"
+                CREATE TABLE IF NOT EXISTS Vacations (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    EmployeeId INTEGER NOT NULL,
+                    StartDate TEXT NOT NULL,
+                    EndDate TEXT NOT NULL,
+                    Comment TEXT,
+                    FOREIGN KEY(EmployeeId) REFERENCES Employees(Id)
+                );";
+
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = createEmployees;
@@ -52,9 +62,12 @@ namespace VacationApp.Data
 
                 cmd.CommandText = createDepartments;
                 cmd.ExecuteNonQuery();
+
+                cmd.CommandText = createVacations;
+                cmd.ExecuteNonQuery();
             }
 
-            // Ensure VacationDays column exists in legacy DBs (safe no-op if present)
+            // Ensure VacationDays column exists (legacy migrations)
             using (var checkCmd = conn.CreateCommand())
             {
                 checkCmd.CommandText = "PRAGMA table_info(Employees);";
@@ -197,6 +210,112 @@ namespace VacationApp.Data
             conn.Open();
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "DELETE FROM Departments WHERE Id = @id;";
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        // Vacations CRUD
+        public static List<Vacation> GetVacationsForYear(int year)
+        {
+            var list = new List<Vacation>();
+            var firstDay = new DateTime(year, 1, 1);
+            var lastDay = new DateTime(year, 12, 31);
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"SELECT Id, EmployeeId, StartDate, EndDate, Comment
+                                FROM Vacations
+                                WHERE date(StartDate) <= @last AND date(EndDate) >= @first
+                                ORDER BY date(StartDate);";
+            cmd.Parameters.AddWithValue("@first", firstDay.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@last", lastDay.ToString("yyyy-MM-dd"));
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                var v = new Vacation
+                {
+                    Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
+                    EmployeeId = rdr.IsDBNull(1) ? 0 : Convert.ToInt32(rdr[1]),
+                    StartDate = rdr.IsDBNull(2) ? DateTime.Today : DateTime.Parse(rdr.GetString(2)),
+                    EndDate = rdr.IsDBNull(3) ? DateTime.Today : DateTime.Parse(rdr.GetString(3)),
+                    Comment = rdr.IsDBNull(4) ? "" : rdr.GetString(4)
+                };
+                list.Add(v);
+            }
+            return list;
+        }
+
+        public static List<Vacation> GetVacationsForEmployee(int employeeId, int year)
+        {
+            var list = new List<Vacation>();
+            var firstDay = new DateTime(year, 1, 1);
+            var lastDay = new DateTime(year, 12, 31);
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"SELECT Id, EmployeeId, StartDate, EndDate, Comment
+                                FROM Vacations
+                                WHERE EmployeeId = @eid
+                                  AND date(StartDate) <= @last
+                                  AND date(EndDate) >= @first
+                                ORDER BY date(StartDate);";
+            cmd.Parameters.AddWithValue("@eid", employeeId);
+            cmd.Parameters.AddWithValue("@first", firstDay.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@last", lastDay.ToString("yyyy-MM-dd"));
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                var v = new Vacation
+                {
+                    Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
+                    EmployeeId = rdr.IsDBNull(1) ? 0 : Convert.ToInt32(rdr[1]),
+                    StartDate = rdr.IsDBNull(2) ? DateTime.Today : DateTime.Parse(rdr.GetString(2)),
+                    EndDate = rdr.IsDBNull(3) ? DateTime.Today : DateTime.Parse(rdr.GetString(3)),
+                    Comment = rdr.IsDBNull(4) ? "" : rdr.GetString(4)
+                };
+                list.Add(v);
+            }
+            return list;
+        }
+
+        public static int AddVacation(Vacation v)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"INSERT INTO Vacations (EmployeeId, StartDate, EndDate, Comment)
+                                VALUES (@eid,@start,@end,@comment);
+                                SELECT last_insert_rowid();";
+            cmd.Parameters.AddWithValue("@eid", v.EmployeeId);
+            cmd.Parameters.AddWithValue("@start", v.StartDate.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@end", v.EndDate.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@comment", v.Comment ?? "");
+            var id = Convert.ToInt32(cmd.ExecuteScalar());
+            return id;
+        }
+
+        public static void UpdateVacation(Vacation v)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"UPDATE Vacations
+                                SET EmployeeId=@eid, StartDate=@start, EndDate=@end, Comment=@comment
+                                WHERE Id=@id;";
+            cmd.Parameters.AddWithValue("@eid", v.EmployeeId);
+            cmd.Parameters.AddWithValue("@start", v.StartDate.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@end", v.EndDate.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@comment", v.Comment ?? "");
+            cmd.Parameters.AddWithValue("@id", v.Id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public static void DeleteVacation(int id)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM Vacations WHERE Id = @id;";
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
         }
