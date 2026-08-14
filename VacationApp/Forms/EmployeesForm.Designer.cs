@@ -12,7 +12,6 @@
             this.colName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colEmail = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDepartment = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colStartDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colFte = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
@@ -27,7 +26,7 @@
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvEmployees.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.colId, this.colName, this.colEmail, this.colDepartment, this.colStartDate, this.colFte});
+            this.colId, this.colName, this.colEmail, this.colDepartment, this.colFte});
             this.dgvEmployees.Location = new System.Drawing.Point(12, 12);
             this.dgvEmployees.MultiSelect = false;
             this.dgvEmployees.Name = "dgvEmployees";
@@ -40,7 +39,6 @@
             this.colName.HeaderText = "Name"; this.colName.Name = "colName"; this.colName.Width = 220;
             this.colEmail.HeaderText = "E-Mail"; this.colEmail.Name = "colEmail"; this.colEmail.Width = 180;
             this.colDepartment.HeaderText = "Abteilung"; this.colDepartment.Name = "colDepartment"; this.colDepartment.Width = 120;
-            this.colStartDate.HeaderText = "Eintritt"; this.colStartDate.Name = "colStartDate"; this.colStartDate.Width = 90;
             this.colFte.HeaderText = "FTE"; this.colFte.Name = "colFte"; this.colFte.Width = 60;
             // Buttons
             this.btnAdd.Location = new System.Drawing.Point(12, 405); this.btnAdd.Name = "btnAdd"; this.btnAdd.Size = new System.Drawing.Size(90, 28); this.btnAdd.Text = "Hinzufügen"; this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
@@ -60,7 +58,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colName;
         private System.Windows.Forms.DataGridViewTextBoxColumn colEmail;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDepartment;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colStartDate;
         private System.Windows.Forms.DataGridViewTextBoxColumn colFte;
         private System.Windows.Forms.Button btnAdd, btnEdit, btnDelete, btnRefresh;
     }

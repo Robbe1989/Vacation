@@ -21,7 +21,8 @@ namespace VacationApp.Forms
             dgvEmployees.Rows.Clear();
             foreach (var e in list)
             {
-                dgvEmployees.Rows.Add(e.Id, e.Name, e.Email, e.Department, e.StartDate.ToShortDateString(), e.Fte);
+                var idx = dgvEmployees.Rows.Add(e.Id, e.Name, e.Email, e.Department, e.Fte);
+                dgvEmployees.Rows[idx].Tag = e; // speichere komplettes Objekt für Edit/Delete
             }
         }
 
@@ -39,15 +40,9 @@ namespace VacationApp.Forms
         {
             if (dgvEmployees.SelectedRows.Count == 0) return;
             var row = dgvEmployees.SelectedRows[0];
-            var emp = new Employee
-            {
-                Id = Convert.ToInt32(row.Cells["colId"].Value),
-                Name = Convert.ToString(row.Cells["colName"].Value) ?? "",
-                Email = Convert.ToString(row.Cells["colEmail"].Value) ?? "",
-                Department = Convert.ToString(row.Cells["colDepartment"].Value) ?? "",
-                StartDate = DateTime.TryParse(Convert.ToString(row.Cells["colStartDate"].Value), out var dt) ? dt : DateTime.Today,
-                Fte = Convert.ToDouble(row.Cells["colFte"].Value)
-            };
+            var emp = row.Tag as Employee;
+            if (emp == null) return;
+
             using var dlg = new EmployeeEditForm(emp);
             if (dlg.ShowDialog() == DialogResult.OK)
             {
@@ -60,10 +55,12 @@ namespace VacationApp.Forms
         {
             if (dgvEmployees.SelectedRows.Count == 0) return;
             var row = dgvEmployees.SelectedRows[0];
-            int id = Convert.ToInt32(row.Cells["colId"].Value);
+            var emp = row.Tag as Employee;
+            if (emp == null) return;
+
             if (MessageBox.Show("Mitarbeiter wirklich löschen?", "Löschen", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
-                Database.DeleteEmployee(id);
+                Database.DeleteEmployee(emp.Id);
                 LoadEmployees();
             }
         }
