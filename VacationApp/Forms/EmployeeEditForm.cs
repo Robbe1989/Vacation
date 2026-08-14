@@ -1,6 +1,6 @@
-﻿using System;
+﻿// Datei: VacationApp/Forms/EmployeeEditForm.cs
+using System;
 using System.Globalization;
-using System.Linq;
 using System.Windows.Forms;
 using VacationApp.Data;
 using VacationApp.Models;
@@ -15,58 +15,46 @@ namespace VacationApp.Forms
         {
             InitializeComponent();
 
-            // Load departments into a ComboBox for department selection (ensure you have cmbDepartment in designer)
+            // Load departments into cmbDepartment
             var depts = Database.GetAllDepartments();
             cmbDepartment.Items.Clear();
             foreach (var d in depts)
                 cmbDepartment.Items.Add(d.Name);
 
-            // if employees use department values, hook up event
-            cmbDepartment.SelectedIndexChanged += CmbDepartment_SelectedIndexChanged;
+            // if there are departments, select first by default
+            if (cmbDepartment.Items.Count > 0)
+                cmbDepartment.SelectedIndex = 0;
 
-            // default FTE options fallback
+            // load default FTE options (will be replaced when department selected)
             LoadFteOptions(null);
 
             if (e == null)
             {
                 Employee = new Employee();
-                Employee.StartDate = DateTime.Today; // still in DB but not editable
-                cmbFte.SelectedIndex = 0;
+                Employee.StartDate = DateTime.Today; // stored but not editable
             }
             else
             {
                 Employee = e;
                 txtName.Text = Employee.Name;
                 txtEmail.Text = Employee.Email;
-                txtDepartment.Text = Employee.Department;
-                // select department dropdown if present
+
                 if (!string.IsNullOrEmpty(Employee.Department) && cmbDepartment.Items.Contains(Employee.Department))
                     cmbDepartment.SelectedItem = Employee.Department;
-                else if (cmbDepartment.Items.Count > 0)
-                    cmbDepartment.SelectedIndex = 0;
 
-                // select FTE by numeric match
-                var found = false;
-                for (int i = 0; i < cmbFte.Items.Count; i++)
-                {
-                    var item = cmbFte.Items[i].ToString();
-                    if (item != null)
-                    {
-                        // map label to value if custom map exists
-                        if (TryParseFteLabel(item, out double v) && Math.Abs(v - Employee.Fte) < 0.0001)
-                        {
-                            cmbFte.SelectedIndex = i;
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-                if (!found && cmbFte.Items.Count > 0)
-                    cmbFte.SelectedIndex = 0;
+                // try to select FTE matching value
+                SelectFteByValue(Employee.Fte);
             }
+
+            cmbDepartment.SelectedIndexChanged += CmbDepartment_SelectedIndexChanged;
         }
 
-        // Helper: load FTE options for departmentName (null = defaults)
+        private void CmbDepartment_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            var sel = cmbDepartment.SelectedItem?.ToString();
+            LoadFteOptions(sel);
+        }
+
         private void LoadFteOptions(string? departmentName)
         {
             cmbFte.Items.Clear();
@@ -74,39 +62,57 @@ namespace VacationApp.Forms
             Department? dept = null;
             if (!string.IsNullOrEmpty(departmentName))
             {
-                var list = Database.GetAllDepartments();
-                dept = list.Find(x => string.Equals(x.Name, departmentName, StringComparison.OrdinalIgnoreCase));
+                dept = Database.GetAllDepartments().Find(x => string.Equals(x.Name, departmentName, StringComparison.OrdinalIgnoreCase));
             }
 
             if (dept != null)
             {
                 if (!dept.UseFte)
                 {
-                    cmbFte.Items.Add("Vollzeit (100%)"); // only default
+                    cmbFte.Items.Add("Vollzeit (100%)");
                     cmbFte.Enabled = false;
+                    cmbFte.SelectedIndex = 0;
                     return;
                 }
+
                 foreach (var kv in dept.GetFteOptions())
-                {
-                    cmbFte.Items.Add($"{kv.Label}"); // label only; parse later using dept mapping stored in DB
-                }
+                    cmbFte.Items.Add(kv.Label);
+
                 cmbFte.Enabled = true;
+                cmbFte.SelectedIndex = 0;
             }
             else
             {
-                // fallback defaults
+                // defaults
                 cmbFte.Items.Add("Vollzeit (100%)");
                 cmbFte.Items.Add("Halbtags (50%)");
                 cmbFte.Items.Add("Teilzeit 80% (80%)");
                 cmbFte.Enabled = true;
+                cmbFte.SelectedIndex = 0;
             }
+        }
+
+        private void SelectFteByValue(double value)
+        {
+            // try to find label with same value in current cmbFte items via departments
+            foreach (var item in cmbFte.Items)
+            {
+                var label = item?.ToString();
+                if (label != null && TryParseFteLabel(label, out var v) && Math.Abs(v - value) < 0.0001)
+                {
+                    cmbFte.SelectedItem = label;
+                    return;
+                }
+            }
+            // fallback leave first item
+            if (cmbFte.Items.Count > 0)
+                cmbFte.SelectedIndex = 0;
         }
 
         private bool TryParseFteLabel(string label, out double value)
         {
-            // Try to resolve value: search departments for exact label
-            var depts = Database.GetAllDepartments();
-            foreach (var d in depts)
+            // resolve from departments
+            foreach (var d in Database.GetAllDepartments())
             {
                 foreach (var kv in d.GetFteOptions())
                 {
@@ -117,24 +123,16 @@ namespace VacationApp.Forms
                     }
                 }
             }
-            // fallback parsing: try to extract numeric in parentheses or percent
             value = 1.0;
             return false;
-        }
-
-        private void CmbDepartment_SelectedIndexChanged(object? sender, EventArgs e)
-        {
-            var sel = cmbDepartment.SelectedItem?.ToString();
-            LoadFteOptions(sel);
         }
 
         private void btnOk_Click(object sender, EventArgs e)
         {
             Employee.Name = txtName.Text.Trim();
             Employee.Email = txtEmail.Text.Trim();
-            Employee.Department = cmbDepartment.SelectedItem?.ToString() ?? txtDepartment.Text.Trim();
+            Employee.Department = cmbDepartment.SelectedItem?.ToString() ?? "";
 
-            // determine numeric fte from selected label
             var sel = cmbFte.SelectedItem?.ToString();
             if (!string.IsNullOrEmpty(sel) && TryParseFteLabel(sel, out var fv))
                 Employee.Fte = fv;
@@ -142,6 +140,13 @@ namespace VacationApp.Forms
                 Employee.Fte = 1.0;
 
             DialogResult = DialogResult.OK;
+            Close();
+        }
+
+        // Wichtig: diese Methode wurde in Designer als EventHandler eingetragen
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            DialogResult = DialogResult.Cancel;
             Close();
         }
     }

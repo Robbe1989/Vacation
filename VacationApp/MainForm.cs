@@ -9,10 +9,24 @@ namespace VacationApp
     {
 	private Button btnEmployeesVisible;
         public MainForm()
-        {
-            InitializeComponent();
-            AddMenu();
-        }
+{
+    InitializeComponent();
+
+    // initialisiere btnEmployeesVisible, falls noch nicht existent
+    btnEmployeesVisible = new System.Windows.Forms.Button();
+    btnEmployeesVisible.Text = "Mitarbeiter";
+    btnEmployeesVisible.Size = new System.Drawing.Size(140, 36);
+    btnEmployeesVisible.Click += (s, e) =>
+    {
+        using var f = new VacationApp.Forms.EmployeesForm();
+        f.ShowDialog(this);
+    };
+    this.Controls.Add(btnEmployeesVisible);
+    // positioniere zentriert (nutze deine bestehende Methode, falls vorhanden)
+    CenterEmployeesButton();
+
+    AddMenu(); // falls du das Menü dort erzeugst
+}
 
         private void AddMenu()
 {
