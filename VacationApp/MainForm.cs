@@ -11,6 +11,7 @@ namespace VacationApp
     public partial class MainForm : Form
     {
         private const int DayColumnWidth = 28;
+        private const int HeaderMinHeight = 80; // Mindesthöhe für panelMonthHeader
 
         public MainForm()
         {
@@ -39,13 +40,46 @@ namespace VacationApp
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
 
+            // Wenn das Formular in Größe/State wechselt (z.B. Vollbild), neu layouten und redrawen
+            this.Resize += (s, e) =>
+            {
+                // Erzwinge Mindesthöhe und Neuzeichnen nach dem Layout-Pass
+                EnsureHeaderMinHeight();
+                this.BeginInvoke(new Action(() =>
+                {
+                    // Force layout so dgv spalten display-rects stimmen
+                    dgvCalendar.PerformLayout();
+                    panelMonthHeader.Invalidate();
+                }));
+            };
+            this.ResizeEnd += (s, e) =>
+            {
+                EnsureHeaderMinHeight();
+                panelMonthHeader.Invalidate();
+            };
+            this.ClientSizeChanged += (s, e) =>
+            {
+                EnsureHeaderMinHeight();
+                this.BeginInvoke(new Action(() => panelMonthHeader.Invalidate()));
+            };
+            // Wenn WindowState geändert (z.B. Maximized), ebenfalls neuzeichnen
+            this.SizeChanged += (s, e) =>
+            {
+                EnsureHeaderMinHeight();
+                this.BeginInvoke(new Action(() => panelMonthHeader.Invalidate()));
+            };
+
             // Erstes Laden nach Form.Shown (sicher, dass DGV Layout hat)
             this.Shown += (s, e) =>
             {
+                // bring header to front to avoid it being overlapped by other controls
+                panelMonthHeader.BringToFront();
+                // Use BeginInvoke so the call happens after the current paint/layout pass.
                 this.BeginInvoke(new Action(() =>
                 {
                     try
                     {
+                        EnsureHeaderMinHeight();
                         LoadCalendar((int)nudYear.Value);
                         dgvCalendar.ClearSelection();
                         panelMonthHeader.Invalidate();
@@ -56,6 +90,13 @@ namespace VacationApp
                     }
                 }));
             };
+        }
+
+        private void EnsureHeaderMinHeight()
+        {
+            if (panelMonthHeader == null) return;
+            if (panelMonthHeader.Height < HeaderMinHeight)
+                panelMonthHeader.Height = HeaderMinHeight;
         }
 
         private void LoadCalendar(int year)
@@ -187,14 +228,22 @@ namespace VacationApp
             }
         }
 
-        // Header: Monatsbanner, KW-Row with numbers, Tag-Header (Tage + Wochentage)
-        // Robust: dynamically compute font sizes and minimum heights so day numbers stay visible.
+        // Paint wie vorher, aber mit Schutz gegen zu kleine Höhen und ungültige Spaltenrects
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
             try
             {
                 g.Clear(panelMonthHeader.BackColor);
+
+                // fallback if header too small
+                if (panelMonthHeader.Height < 40)
+                {
+                    // keep a minimal visual feedback
+                    using var smallBrush = new SolidBrush(Color.FromArgb(255, 250, 205));
+                    g.FillRectangle(smallBrush, new Rectangle(0, 0, panelMonthHeader.Width, panelMonthHeader.Height));
+                    return;
+                }
 
                 int year;
                 try { year = (int)nudYear.Value; }
@@ -204,25 +253,15 @@ namespace VacationApp
                 var firstOfYear = new DateTime(year, 1, 1);
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-                // overall available height
-                int totalHeight = Math.Max(60, panelMonthHeader.Height); // ensure reasonable area
-                // banner: 40..60% of height but at least 36
+                // compute safe heights, clamped
+                int totalHeight = Math.Max(HeaderMinHeight, panelMonthHeader.Height);
                 int bannerHeight = Math.Clamp((int)(totalHeight * 0.45), 36, totalHeight - 36);
-                // week row: at least 16, typically 14-22
-                int weekRowHeight = Math.Clamp((int)(totalHeight * 0.15), 14, 26);
-                // day header uses remaining space; ensure at least 18
+                int weekRowHeight = Math.Clamp((int)(totalHeight * 0.15), 14, 32);
                 int dayHeaderHeight = totalHeight - bannerHeight - weekRowHeight;
-                if (dayHeaderHeight < 18)
-                {
-                    // reduce banner if possible
-                    int need = 18 - dayHeaderHeight;
-                    bannerHeight = Math.Max(36, bannerHeight - need);
-                    dayHeaderHeight = totalHeight - bannerHeight - weekRowHeight;
-                    if (dayHeaderHeight < 12) dayHeaderHeight = 12;
-                }
+                if (dayHeaderHeight < 12) dayHeaderHeight = 12;
 
-                // Determine font sizes based on dayHeaderHeight
-                float dayFontSize = Math.Max(8f, Math.Min(12f, dayHeaderHeight * 0.42f));
+                // fonts sized relative to available area but clamped
+                float dayFontSize = Math.Max(7f, Math.Min(12f, dayHeaderHeight * 0.42f));
                 float weekdayFontSize = Math.Max(7f, Math.Min(10f, dayHeaderHeight * 0.28f));
                 float monthFontSize = Math.Max(12f, this.Font.Size + Math.Min(10f, bannerHeight * 0.18f));
 
@@ -232,7 +271,7 @@ namespace VacationApp
                 using var penBanner = new Pen(Color.LightGray);
                 using var sfCenterTop = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
-                // 1) Monatsbanner (alternierend)
+                // draw months (alternating color) - same logic but tolerant to missing rects
                 for (int month = 1; month <= 12; month++)
                 {
                     DateTime monthStart, monthEnd;
@@ -276,7 +315,6 @@ namespace VacationApp
 
                     var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
                     using var brushBanner = new SolidBrush(fillColor);
-
                     g.FillRectangle(brushBanner, monthRect);
                     g.DrawRectangle(penBanner, monthRect);
 
@@ -285,7 +323,7 @@ namespace VacationApp
                     g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
                 }
 
-                // 2) KW-Row background (light)
+                // KW row background
                 using (var brushWeekBg = new SolidBrush(Color.FromArgb(245, 245, 245)))
                 using (var penWeek = new Pen(Color.LightGray))
                 {
@@ -294,7 +332,7 @@ namespace VacationApp
                     g.DrawLine(penWeek, 0, bannerHeight + weekRowHeight - 1, panelMonthHeader.Width, bannerHeight + weekRowHeight - 1);
                 }
 
-                // 3) Day header background (below KW row)
+                // Day header background
                 using (var brushDayBg = new SolidBrush(Color.White))
                 using (var penGrid = new Pen(Color.LightGray))
                 {
@@ -303,7 +341,7 @@ namespace VacationApp
                     g.DrawLine(penGrid, 0, bannerHeight + weekRowHeight, panelMonthHeader.Width, bannerHeight + weekRowHeight);
                 }
 
-                // 4) Draw each visible day: day-of-month and weekday; weekends shaded
+                // Draw days & weekdays with dynamic fonts
                 using (var dayFont = new Font(this.Font.FontFamily, dayFontSize, FontStyle.Regular))
                 using (var weekdayFont = new Font(this.Font.FontFamily, weekdayFontSize, FontStyle.Regular))
                 using (var penDotted = new Pen(Color.Gray))
@@ -329,7 +367,6 @@ namespace VacationApp
                         if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                             g.FillRectangle(brushWeekend, cellRect);
 
-                        // dotted vertical separator
                         g.DrawLine(penDotted, cellRect.Left, bannerHeight + weekRowHeight, cellRect.Left, bannerHeight + weekRowHeight + dayHeaderHeight);
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (int)Math.Max(10, cellRect.Height * 0.55) - 4);
@@ -339,7 +376,6 @@ namespace VacationApp
                         string weekdayShort = date.ToString("ddd", CultureInfo.CurrentCulture);
 
                         var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                        // draw day and weekday; ensure visible even in narrow columns
                         g.DrawString(dayText, dayFont, Brushes.Black, dayRect, sfCenter);
                         g.DrawString(weekdayShort, weekdayFont, Brushes.DarkSlateGray, weekdayRect, sfCenter);
                     }
@@ -360,7 +396,7 @@ namespace VacationApp
                     }
                 }
 
-                // 5) Draw week numbers (plain centered numbers spanning Mon..Sun)
+                // Draw week numbers as plain centered numbers spanning Mon..Sun
                 var calendar = CultureInfo.CurrentCulture.Calendar;
                 var weekRule = CalendarWeekRule.FirstFourDayWeek;
                 var firstDayOfWeek = DayOfWeek.Monday;
@@ -380,7 +416,6 @@ namespace VacationApp
 
                     Rectangle rectStart = Rectangle.Empty;
                     Rectangle rectEnd = Rectangle.Empty;
-                    // find first visible column in week
                     for (int c = colStart; c <= colEnd; c++)
                     {
                         try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectStart = r; break; } }
@@ -431,7 +466,7 @@ namespace VacationApp
             menu.Items.Add(menuMitarbeiter);
 
             var menuOptions = new ToolStripMenuItem("Optionen");
-            var menuDepartments = new System.Windows.Forms.ToolStripMenuItem("Abteilungen");
+            var menuDepartments = new ToolStripMenuItem("Abteilungen");
             menuDepartments.Click += (s, e) =>
             {
                 using var f = new Forms.DepartmentsForm();
@@ -442,7 +477,7 @@ namespace VacationApp
         }
     }
 
-    // Hilfsmethoden für abgerundete Rechtecke (falls noch genutzt)
+    // Hilfsmethoden (abgerundete Rechtecke falls noch verwendet)
     static class GraphicsExtensions
     {
         public static void FillRoundedRectangle(this Graphics g, Brush brush, Rectangle bounds, int radius)
