@@ -11,6 +11,7 @@ namespace VacationApp
     public partial class MainForm : Form
     {
         private const int DayColumnWidth = 28;
+        private const int HeaderMinHeight = 80;
 
         public MainForm()
         {
@@ -32,29 +33,66 @@ namespace VacationApp
                 LoadCalendar((int)nudYear.Value);
             };
 
+            // Header redraw when DGV changes
             dgvCalendar.Scroll += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnWidthChanged += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
 
-            // Erstes Laden erst nach dem Anzeigen, damit das DGV Layout/Spaltenrechtecke hat
-            this.Shown += (s, e) =>
+            // Ensure header visible and load calendar after initial layout
+            this.Shown += async (s, e) =>
             {
+                try
+                {
+                    panelMonthHeader.BringToFront();
+                }
+                catch { }
+
+                // small delay so WinForms finishes layout and DGV has display rectangles
+                await System.Threading.Tasks.Task.Delay(80);
+
+                EnsureHeaderMinHeight();
+
+                try
+                {
+                    LoadCalendar((int)nudYear.Value);
+                    dgvCalendar.ClearSelection();
+                    panelMonthHeader.Invalidate();
+                    System.Diagnostics.Debug.WriteLine($"[Startup] Columns={dgvCalendar.Columns.Count}, Rows={dgvCalendar.Rows.Count}");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Fehler beim initialen Laden: " + ex.Message);
+                }
+            };
+
+            // Make Resize/Maximize robust: enforce header height and redraw after layout
+            this.Resize += (s, e) =>
+            {
+                EnsureHeaderMinHeight();
                 this.BeginInvoke(new Action(() =>
                 {
                     try
                     {
-                        LoadCalendar((int)nudYear.Value);
-                        dgvCalendar.ClearSelection();
+                        dgvCalendar.PerformLayout();
                         panelMonthHeader.Invalidate();
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Fehler beim initialen Laden: " + ex.Message);
-                    }
+                    catch { }
                 }));
             };
+            this.SizeChanged += (s, e) =>
+            {
+                EnsureHeaderMinHeight();
+                panelMonthHeader.Invalidate();
+            };
+        }
+
+        private void EnsureHeaderMinHeight()
+        {
+            if (panelMonthHeader == null) return;
+            if (panelMonthHeader.Height < HeaderMinHeight)
+                panelMonthHeader.Height = HeaderMinHeight;
         }
 
         private void LoadCalendar(int year)
@@ -71,6 +109,7 @@ namespace VacationApp
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
                 var firstOfYear = new DateTime(year, 1, 1);
 
+                // Name column (frozen)
                 var colName = new DataGridViewTextBoxColumn
                 {
                     Name = "colName",
@@ -82,6 +121,7 @@ namespace VacationApp
                 };
                 dgvCalendar.Columns.Add(colName);
 
+                // Day columns
                 for (int d = 0; d < daysInYear; d++)
                 {
                     var date = firstOfYear.AddDays(d);
@@ -112,6 +152,7 @@ namespace VacationApp
                     dgvCalendar.Columns.Add(col);
                 }
 
+                // Total column
                 var colTotal = new DataGridViewTextBoxColumn
                 {
                     Name = "colTotal",
@@ -122,14 +163,15 @@ namespace VacationApp
                 };
                 dgvCalendar.Columns.Add(colTotal);
 
+                // Fill rows for employees
                 foreach (var emp in employees)
                 {
                     object[] values = new object[1 + daysInYear + 1];
                     values[0] = emp.Name;
 
                     var dayMarks = new bool[daysInYear];
-
                     var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
+
                     foreach (var v in vlist)
                     {
                         var s = v.StartDate < firstOfYear ? firstOfYear : v.StartDate;
@@ -151,10 +193,11 @@ namespace VacationApp
                         }
                         else values[1 + d] = "";
                     }
-                    values[1 + daysInYear] = total > 0 ? total.ToString() : "";
 
+                    values[1 + daysInYear] = total > 0 ? total.ToString() : "";
                     int rowIndex = dgvCalendar.Rows.Add(values);
 
+                    // Color vacation cells
                     if (total > 0)
                     {
                         for (int d = 0; d < daysInYear; d++)
@@ -186,13 +229,20 @@ namespace VacationApp
             }
         }
 
-        // Header: Monatsbanner (alternierend), Tagesspalten, Wochenend‑Shading; KW wurden entfernt.
+        // Draw header: months (alternating colors), KW row (numbers per week, Monday start), day headers and weekends shading
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
             try
             {
                 g.Clear(panelMonthHeader.BackColor);
+
+                if (panelMonthHeader.Height < 40)
+                {
+                    using var b = new SolidBrush(Color.FromArgb(255, 250, 205));
+                    g.FillRectangle(b, panelMonthHeader.ClientRectangle);
+                    return;
+                }
 
                 int year;
                 try { year = (int)nudYear.Value; }
@@ -202,20 +252,22 @@ namespace VacationApp
                 var firstOfYear = new DateTime(year, 1, 1);
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-                int bannerHeight = Math.Max(36, panelMonthHeader.Height * 55 / 100);
-                int dayHeaderHeight = panelMonthHeader.Height - bannerHeight;
+                // layout: banner, week-row, day-header
+                int bannerHeight = Math.Max(36, panelMonthHeader.Height * 45 / 100);
+                int weekRowHeight = Math.Max(18, panelMonthHeader.Height * 16 / 100);
+                int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - weekRowHeight;
+                if (dayHeaderHeight < 12) dayHeaderHeight = 12;
 
                 var colorOdd = Color.FromArgb(255, 250, 205);
                 var colorEven = Color.FromArgb(200, 235, 255);
 
                 using var penBanner = new Pen(Color.LightGray);
-                using var sfCenterTop = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                using var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
-                // Monatsbanner (alternierend)
+                // draw month banners
                 for (int month = 1; month <= 12; month++)
                 {
-                    DateTime monthStart;
-                    DateTime monthEnd;
+                    DateTime monthStart, monthEnd;
                     try
                     {
                         monthStart = new DateTime(year, month, 1);
@@ -232,27 +284,17 @@ namespace VacationApp
                     int colStart = 1 + startIndex;
                     int colEnd = 1 + endIndex;
 
-                    Rectangle rectStart = Rectangle.Empty;
-                    Rectangle rectEnd = Rectangle.Empty;
+                    Rectangle rectStart = Rectangle.Empty, rectEnd = Rectangle.Empty;
                     for (int c = colStart; c <= colEnd; c++)
                     {
-                        try
-                        {
-                            var r = dgvCalendar.GetColumnDisplayRectangle(c, true);
-                            if (r.Width > 0) { rectStart = r; break; }
-                        }
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectStart = r; break; } }
                         catch { }
                     }
                     for (int c = colEnd; c >= colStart; c--)
                     {
-                        try
-                        {
-                            var r = dgvCalendar.GetColumnDisplayRectangle(c, true);
-                            if (r.Width > 0) { rectEnd = r; break; }
-                        }
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectEnd = r; break; } }
                         catch { }
                     }
-
                     if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
 
                     int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
@@ -265,25 +307,33 @@ namespace VacationApp
 
                     var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
                     using var brushBanner = new SolidBrush(fillColor);
-
                     g.FillRectangle(brushBanner, monthRect);
                     g.DrawRectangle(penBanner, monthRect);
 
                     var monthName = new DateTime(year, month, 1).ToString("MMMM", CultureInfo.CurrentCulture);
                     using var bigFont = new Font(this.Font.FontFamily, Math.Max(12f, this.Font.Size + 2f), FontStyle.Bold);
-                    g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
+                    g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenter);
                 }
 
-                // Tag-Header-Grund
+                // KW row background
+                using (var brushWeekBg = new SolidBrush(Color.FromArgb(245, 245, 245)))
+                using (var penWeek = new Pen(Color.LightGray))
+                {
+                    var weekAreaRect = new Rectangle(0, bannerHeight, panelMonthHeader.Width, weekRowHeight);
+                    g.FillRectangle(brushWeekBg, weekAreaRect);
+                    g.DrawLine(penWeek, 0, bannerHeight + weekRowHeight - 1, panelMonthHeader.Width, bannerHeight + weekRowHeight - 1);
+                }
+
+                // day header background
                 using (var brushDayBg = new SolidBrush(Color.White))
                 using (var penGrid = new Pen(Color.LightGray))
                 {
-                    var dayAreaRect = new Rectangle(0, bannerHeight, panelMonthHeader.Width, dayHeaderHeight);
+                    var dayAreaRect = new Rectangle(0, bannerHeight + weekRowHeight, panelMonthHeader.Width, dayHeaderHeight);
                     g.FillRectangle(brushDayBg, dayAreaRect);
-                    g.DrawLine(penGrid, 0, bannerHeight, panelMonthHeader.Width, bannerHeight);
+                    g.DrawLine(penGrid, 0, bannerHeight + weekRowHeight, panelMonthHeader.Width, bannerHeight + weekRowHeight);
                 }
 
-                // Tage + Wochentage + Wochenendshading
+                // draw days + weekday labels + weekend shading
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
                 using (var penDotted = new Pen(Color.Gray))
@@ -303,15 +353,13 @@ namespace VacationApp
 
                         int x = rect.X;
                         int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
-                        var cellRect = new Rectangle(x, bannerHeight, w, dayHeaderHeight);
+                        var cellRect = new Rectangle(x, bannerHeight + weekRowHeight, w, dayHeaderHeight);
 
                         var date = firstOfYear.AddDays(d);
                         if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
-                        {
                             g.FillRectangle(brushWeekend, cellRect);
-                        }
 
-                        g.DrawLine(penDotted, cellRect.Left, bannerHeight, cellRect.Left, bannerHeight + dayHeaderHeight);
+                        g.DrawLine(penDotted, cellRect.Left, bannerHeight + weekRowHeight, cellRect.Left, bannerHeight + weekRowHeight + dayHeaderHeight);
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
                         var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
@@ -332,12 +380,76 @@ namespace VacationApp
                             if (lastRect.Width > 0)
                             {
                                 int xRight = lastRect.Right;
-                                g.DrawLine(penDotted, xRight, bannerHeight, xRight, bannerHeight + dayHeaderHeight);
+                                g.DrawLine(penDotted, xRight, bannerHeight + weekRowHeight, xRight, bannerHeight + weekRowHeight + dayHeaderHeight);
                             }
                         }
                         catch { }
                     }
                 }
+
+                // KW numbers centered over Mon..Sun (Monday start)
+                // KW-Zeile komplett zeichnen
+using var weekFont = new Font(this.Font.FontFamily,
+                              Math.Max(9f, this.Font.Size - 1f),
+                              FontStyle.Bold);
+
+var drawnWeeks = new HashSet<string>();
+
+for (int d = 0; d < daysInYear; d++)
+{
+    var date = firstOfYear.AddDays(d);
+
+    int kw = ISOWeek.GetWeekOfYear(date);
+    int isoYear = ISOWeek.GetYear(date);
+
+    string weekKey = $"{isoYear}-{kw}";
+
+    // KW nur einmal zeichnen
+    if (!drawnWeeks.Add(weekKey))
+        continue;
+
+    // Alle Tage dieser KW suchen
+    var weekDays = Enumerable.Range(0, daysInYear)
+        .Where(i =>
+        {
+            var dt = firstOfYear.AddDays(i);
+            return ISOWeek.GetWeekOfYear(dt) == kw &&
+                   ISOWeek.GetYear(dt) == isoYear;
+        })
+        .ToList();
+
+    if (!weekDays.Any())
+        continue;
+
+    int firstDay = weekDays.First();
+    int lastDay = weekDays.Last();
+
+    Rectangle rectStart = dgvCalendar.GetColumnDisplayRectangle(firstDay + 1, true);
+    Rectangle rectEnd = dgvCalendar.GetColumnDisplayRectangle(lastDay + 1, true);
+
+    if (rectStart.Width <= 0 && rectEnd.Width <= 0)
+        continue;
+
+    var weekRect = new Rectangle(
+        rectStart.X,
+        bannerHeight,
+        rectEnd.Right - rectStart.X,
+        weekRowHeight);
+
+    if (weekRect.Width > 4)
+    {
+        g.DrawString(
+            kw.ToString(),
+            weekFont,
+            Brushes.Black,
+            weekRect,
+            new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            });
+    }
+}
             }
             catch (Exception ex)
             {
