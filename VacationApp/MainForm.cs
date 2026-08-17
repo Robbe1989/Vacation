@@ -27,6 +27,12 @@ namespace VacationApp
                 LoadCalendar((int)nudYear.Value);
             };
 
+            // Sync events for month header redraw
+            dgvCalendar.Scroll += (s, e) => panelMonthHeader.Invalidate();
+            dgvCalendar.ColumnWidthChanged += (s, e) => panelMonthHeader.Invalidate();
+            dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
+            panelMonthHeader.Paint += PanelMonthHeader_Paint;
+
             nudYear.Value = DateTime.Now.Year;
             LoadCalendar((int)nudYear.Value);
         }
@@ -149,12 +155,76 @@ namespace VacationApp
                 if (dgvCalendar.Columns.Contains("colName"))
                     dgvCalendar.Columns["colName"].Frozen = true;
 
-                // Improve header appearance: rotate header or keep as single numbers (we keep numbers)
                 dgvCalendar.ResumeLayout();
+
+                // redraw month header
+                panelMonthHeader.Invalidate();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Fehler beim Laden des Tageskalenders: " + ex.Message);
+            }
+        }
+
+        // Paint month header: draw month spans aligned with dgvCalendar day columns
+        private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.Clear(panelMonthHeader.BackColor);
+
+            int year = (int)nudYear.Value;
+            var firstOfYear = new DateTime(year, 1, 1);
+            int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
+
+            using var brush = new SolidBrush(Color.FromArgb(230, 230, 230));
+            using var pen = new Pen(Color.Gray);
+            using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthStart = new DateTime(year, month, 1);
+                var monthEnd = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+
+                // clamp to year range
+                if (monthEnd.Year != year) monthEnd = new DateTime(year, 12, 31);
+                if (monthStart.Year != year) monthStart = new DateTime(year, 1, 1);
+
+                int startIndex = (monthStart - firstOfYear).Days;
+                int endIndex = (monthEnd - firstOfYear).Days;
+                if (startIndex < 0) startIndex = 0;
+                if (endIndex >= daysInYear) endIndex = daysInYear - 1;
+                if (startIndex > endIndex) continue;
+
+                // get display rectangle in dgv coordinates for first and last day columns
+                // column index in dgvCalendar = 1 + dayIndex
+                int colStart = 1 + startIndex;
+                int colEnd = 1 + endIndex;
+
+                var rectStart = dgvCalendar.GetColumnDisplayRectangle(colStart, true);
+                var rectEnd = dgvCalendar.GetColumnDisplayRectangle(colEnd, true);
+
+                // if both columns are not visible (e.g., scrolled out), skip drawing
+                if (rectStart.Width == 0 && rectEnd.Width == 0)
+                    continue;
+
+                // convert dgv point to panel coordinates
+                var pointScreen = dgvCalendar.PointToScreen(new Point(rectStart.X, rectStart.Y));
+                var panelPoint = panelMonthHeader.PointToClient(pointScreen);
+                var pointScreenEnd = dgvCalendar.PointToScreen(new Point(rectEnd.Right, rectEnd.Y));
+                var panelPointEnd = panelMonthHeader.PointToClient(pointScreenEnd);
+
+                int x = panelPoint.X;
+                int width = panelPointEnd.X - panelPoint.X;
+                if (width <= 2) width = rectStart.Width; // fallback
+
+                var r = new Rectangle(x, 0, Math.Max(0, width), panelMonthHeader.Height - 1);
+                // draw background & border
+                g.FillRectangle(brush, r);
+                g.DrawRectangle(pen, r);
+
+                // month name centered
+                var monthName = new DateTime(year, month, 1).ToString("MMM", System.Globalization.CultureInfo.CurrentCulture);
+                g.DrawString(monthName, this.Font, Brushes.Black, r, sf);
             }
         }
 

@@ -8,14 +8,16 @@
         {
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
 
-            this.dgvCalendar = new System.Windows.Forms.DataGridView();
             this.panelTop = new System.Windows.Forms.Panel();
             this.lblYear = new System.Windows.Forms.Label();
             this.nudYear = new System.Windows.Forms.NumericUpDown();
             this.btnManageVacations = new System.Windows.Forms.Button();
 
-            ((System.ComponentModel.ISupportInitialize)(this.dgvCalendar)).BeginInit();
+            this.panelMonthHeader = new System.Windows.Forms.Panel();
+            this.dgvCalendar = new System.Windows.Forms.DataGridView();
+
             ((System.ComponentModel.ISupportInitialize)(this.nudYear)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvCalendar)).BeginInit();
             this.SuspendLayout();
 
             // menuStrip1 (menu is added in MainForm.AddMenu at runtime)
@@ -50,6 +52,12 @@
             this.btnManageVacations.Size = new System.Drawing.Size(140, 26);
             this.btnManageVacations.Name = "btnManageVacations";
 
+            // panelMonthHeader (draws month spans above the day headers)
+            this.panelMonthHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panelMonthHeader.Height = 24;
+            this.panelMonthHeader.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.panelMonthHeader.Name = "panelMonthHeader";
+
             // dgvCalendar
             this.dgvCalendar.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvCalendar.Location = new System.Drawing.Point(0, 64);
@@ -66,12 +74,11 @@
             this.dgvCalendar.AllowUserToResizeColumns = true;
             this.dgvCalendar.AllowUserToResizeRows = false;
             this.dgvCalendar.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvCalendar.HorizontalScrollingOffset = 0;
-            this.dgvCalendar.Scroll += (s, e) => { /* default handling */ };
 
             // MainForm
             this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Controls.Add(this.dgvCalendar);
+            this.Controls.Add(this.panelMonthHeader);
             this.Controls.Add(this.panelTop);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
@@ -85,10 +92,12 @@
         }
 
         private System.Windows.Forms.MenuStrip menuStrip1;
-        private System.Windows.Forms.DataGridView dgvCalendar;
         private System.Windows.Forms.Panel panelTop;
         private System.Windows.Forms.Label lblYear;
         private System.Windows.Forms.NumericUpDown nudYear;
         private System.Windows.Forms.Button btnManageVacations;
+
+        private System.Windows.Forms.Panel panelMonthHeader;
+        private System.Windows.Forms.DataGridView dgvCalendar;
     }
 }
