@@ -52,15 +52,15 @@
             this.btnManageVacations.Size = new System.Drawing.Size(140, 26);
             this.btnManageVacations.Name = "btnManageVacations";
 
-            // panelMonthHeader (draws month spans above the day headers)
+            // panelMonthHeader (draws month banner and day row)
             this.panelMonthHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelMonthHeader.Height = 24;
+            this.panelMonthHeader.Height = 92; // bigger to fit month banner + day numbers
             this.panelMonthHeader.BackColor = System.Drawing.SystemColors.ControlLight;
             this.panelMonthHeader.Name = "panelMonthHeader";
 
             // dgvCalendar
             this.dgvCalendar.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvCalendar.Location = new System.Drawing.Point(0, 64);
+            this.dgvCalendar.Location = new System.Drawing.Point(0, 136);
             this.dgvCalendar.Name = "dgvCalendar";
             this.dgvCalendar.ReadOnly = true;
             this.dgvCalendar.RowHeadersVisible = false;
@@ -73,7 +73,8 @@
             this.dgvCalendar.AllowUserToOrderColumns = false;
             this.dgvCalendar.AllowUserToResizeColumns = true;
             this.dgvCalendar.AllowUserToResizeRows = false;
-            this.dgvCalendar.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvCalendar.ColumnHeadersVisible = false;
+            this.dgvCalendar.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
 
             // MainForm
             this.ClientSize = new System.Drawing.Size(1200, 700);

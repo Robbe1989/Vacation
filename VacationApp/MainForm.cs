@@ -10,7 +10,8 @@ namespace VacationApp
 {
     public partial class MainForm : Form
     {
-        private const int DayColumnWidth = 20; // pixels per day column
+        // Breite pro Tagenspalte
+        private const int DayColumnWidth = 28;
 
         public MainForm()
         {
@@ -27,10 +28,11 @@ namespace VacationApp
                 LoadCalendar((int)nudYear.Value);
             };
 
-            // Sync events for month header redraw
+            // Sync events for header redraw
             dgvCalendar.Scroll += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnWidthChanged += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
+            dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
 
             nudYear.Value = DateTime.Now.Year;
@@ -71,7 +73,7 @@ namespace VacationApp
                     var col = new DataGridViewTextBoxColumn
                     {
                         Name = $"d{d + 1}",
-                        HeaderText = date.Day.ToString(), // show day number
+                        HeaderText = date.Day.ToString(), // not shown
                         ReadOnly = true,
                         Width = DayColumnWidth,
                         ToolTipText = date.ToString("dd.MM.yyyy")
@@ -94,14 +96,11 @@ namespace VacationApp
                 // Fill rows
                 foreach (var emp in employees)
                 {
-                    // prepare an array for row values (1 + daysInYear + 1)
                     object[] values = new object[1 + daysInYear + 1];
                     values[0] = emp.Name;
 
-                    // boolean array for marking vacation days
                     var dayMarks = new bool[daysInYear];
 
-                    // get vacations for this employee overlapping year
                     var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
                     foreach (var v in vlist)
                     {
@@ -117,12 +116,11 @@ namespace VacationApp
                     }
 
                     int total = 0;
-                    // set day cell values as "X" (or empty)
                     for (int d = 0; d < daysInYear; d++)
                     {
                         if (dayMarks[d])
                         {
-                            values[1 + d] = "X";
+                            values[1 + d] = "●"; // filled dot for visibility
                             total++;
                         }
                         else
@@ -135,7 +133,6 @@ namespace VacationApp
 
                     int rowIndex = dgvCalendar.Rows.Add(values);
 
-                    // set styling for vacation cells (background color)
                     if (total > 0)
                     {
                         for (int d = 0; d < daysInYear; d++)
@@ -151,13 +148,12 @@ namespace VacationApp
                     }
                 }
 
-                // Freeze the name column so it stays visible
+                // Freeze name column
                 if (dgvCalendar.Columns.Contains("colName"))
                     dgvCalendar.Columns["colName"].Frozen = true;
 
                 dgvCalendar.ResumeLayout();
 
-                // redraw month header
                 panelMonthHeader.Invalidate();
             }
             catch (Exception ex)
@@ -166,7 +162,7 @@ namespace VacationApp
             }
         }
 
-        // Paint month header: draw month spans aligned with dgvCalendar day columns
+        // Draw big month banner + day numbers + weekday abbreviations + dotted separators
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -176,59 +172,113 @@ namespace VacationApp
             var firstOfYear = new DateTime(year, 1, 1);
             int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-            using var brush = new SolidBrush(Color.FromArgb(230, 230, 230));
-            using var pen = new Pen(Color.Gray);
-            using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            // layout sizes
+            int bannerHeight = Math.Max(40, panelMonthHeader.Height * 60 / 100); // upper 60% for month title
+            int dayHeaderHeight = panelMonthHeader.Height - bannerHeight; // lower area for day numbers
 
-            for (int month = 1; month <= 12; month++)
+            // draw month banner background (full width) - pale yellow
+            using (var brushBanner = new SolidBrush(Color.FromArgb(255, 250, 205))) // lemonchiffon-like
+            using (var penBanner = new Pen(Color.LightGray))
             {
-                var monthStart = new DateTime(year, month, 1);
-                var monthEnd = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+                var bannerRect = new Rectangle(0, 0, panelMonthHeader.Width, bannerHeight);
+                g.FillRectangle(brushBanner, bannerRect);
+                g.DrawRectangle(penBanner, 0, 0, bannerRect.Width - 1, bannerRect.Height - 1);
+            }
 
-                // clamp to year range
-                if (monthEnd.Year != year) monthEnd = new DateTime(year, 12, 31);
-                if (monthStart.Year != year) monthStart = new DateTime(year, 1, 1);
+            // Draw the month name centered (for the month currently visible in the leftmost visible day)
+            // We will draw the full year months across the width, but also draw the current visible month's big name centered relative to visible day area.
+            // Find the first fully/partially visible day column to determine visible month
+            string bigMonthName = new DateTime(year, (int)nudYear.Value, 1).ToString("MMMM"); // fallback
+            // Better: find the month that the leftmost visible day belongs to
+            int firstVisibleDayIndex = -1;
+            for (int col = 1; col < dgvCalendar.Columns.Count - 1; col++) // skip name col and total
+            {
+                var r = dgvCalendar.GetColumnDisplayRectangle(col, true);
+                if (r.Width > 0)
+                {
+                    // day index:
+                    firstVisibleDayIndex = col - 1; // dayIndex = col - 1 (since col 1 = day 1)
+                    break;
+                }
+            }
+            if (firstVisibleDayIndex >= 0)
+            {
+                var d = firstOfYear.AddDays(firstVisibleDayIndex);
+                bigMonthName = d.ToString("MMMM", System.Globalization.CultureInfo.CurrentCulture);
+            }
 
-                int startIndex = (monthStart - firstOfYear).Days;
-                int endIndex = (monthEnd - firstOfYear).Days;
-                if (startIndex < 0) startIndex = 0;
-                if (endIndex >= daysInYear) endIndex = daysInYear - 1;
-                if (startIndex > endIndex) continue;
+            using (var bigFont = new Font(this.Font.FontFamily, Math.Max(18f, this.Font.Size + 6f), FontStyle.Bold))
+            using (var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+            {
+                var bannerRect = new Rectangle(0, 0, panelMonthHeader.Width, bannerHeight);
+                g.DrawString(bigMonthName, bigFont, Brushes.Black, bannerRect, sfCenter);
+            }
 
-                // get display rectangle in dgv coordinates for first and last day columns
-                // column index in dgvCalendar = 1 + dayIndex
-                int colStart = 1 + startIndex;
-                int colEnd = 1 + endIndex;
+            // draw day header background (white) and small borders
+            using (var brushDayBg = new SolidBrush(Color.White))
+            using (var penGrid = new Pen(Color.LightGray))
+            {
+                var dayAreaRect = new Rectangle(0, bannerHeight, panelMonthHeader.Width, dayHeaderHeight);
+                g.FillRectangle(brushDayBg, dayAreaRect);
+                // top border line
+                g.DrawLine(penGrid, 0, bannerHeight, panelMonthHeader.Width, bannerHeight);
+            }
 
-                var rectStart = dgvCalendar.GetColumnDisplayRectangle(colStart, true);
-                var rectEnd = dgvCalendar.GetColumnDisplayRectangle(colEnd, true);
+            // draw each visible day: day number (dd) and weekday (Mo/Di/...)
+            using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
+            using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
+            using (var penDotted = new Pen(Color.Gray))
+            {
+                penDotted.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+                StringFormat sfDay = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Near };
+                StringFormat sfWeek = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Near };
 
-                // if both columns are not visible (e.g., scrolled out), skip drawing
-                if (rectStart.Width == 0 && rectEnd.Width == 0)
-                    continue;
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    int colIndex = 1 + d; // column index in dgvCalendar
+                    var rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true);
+                    if (rect.Width == 0 && rect.Right <= 0) continue; // not visible and left of viewport
+                    if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue; // not visible and right of viewport
 
-                // convert dgv point to panel coordinates
-                var pointScreen = dgvCalendar.PointToScreen(new Point(rectStart.X, rectStart.Y));
-                var panelPoint = panelMonthHeader.PointToClient(pointScreen);
-                var pointScreenEnd = dgvCalendar.PointToScreen(new Point(rectEnd.Right, rectEnd.Y));
-                var panelPointEnd = panelMonthHeader.PointToClient(pointScreenEnd);
+                    // compute panel X relative (dgvCalendar and panelMonthHeader are left-aligned)
+                    int x = rect.X;
+                    int w = rect.Width;
+                    if (w <= 0) w = DayColumnWidth; // fallback
 
-                int x = panelPoint.X;
-                int width = panelPointEnd.X - panelPoint.X;
-                if (width <= 2) width = rectStart.Width; // fallback
+                    // cell rect in panel coordinates
+                    var cellRect = new Rectangle(x, bannerHeight, w, dayHeaderHeight);
 
-                var r = new Rectangle(x, 0, Math.Max(0, width), panelMonthHeader.Height - 1);
-                // draw background & border
-                g.FillRectangle(brush, r);
-                g.DrawRectangle(pen, r);
+                    // draw vertical dotted separator on left boundary (except if x==0 or overlap with name column area)
+                    var sepX = cellRect.Left;
+                    // Only draw separator if inside visible area
+                    g.DrawLine(penDotted, sepX, bannerHeight, sepX, bannerHeight + dayHeaderHeight);
 
-                // month name centered
-                var monthName = new DateTime(year, month, 1).ToString("MMM", System.Globalization.CultureInfo.CurrentCulture);
-                g.DrawString(monthName, this.Font, Brushes.Black, r, sf);
+                    // draw day number (top of small area)
+                    var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
+                    var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
+
+                    string dayText = (d + 1).ToString("00");
+                    string weekText = firstOfYear.AddDays(d).ToString("dd").Length > 0 ? firstOfYear.AddDays(d).ToString("ddd", System.Globalization.CultureInfo.CurrentCulture) : "";
+
+                    // Draw day number
+                    g.DrawString(dayText, smallFont, Brushes.Black, dayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+
+                    // Draw weekday (short, e.g., Mo, Di)
+                    var weekdayShort = firstOfYear.AddDays(d).ToString("ddd", System.Globalization.CultureInfo.CurrentCulture);
+                    g.DrawString(weekdayShort, weekdayFont, Brushes.DarkSlateGray, weekdayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                }
+
+                // rightmost separator line
+                var lastVisible = dgvCalendar.GetColumnDisplayRectangle(dgvCalendar.Columns.Count - 2, true); // last day col
+                if (lastVisible.Width > 0)
+                {
+                    int xRight = lastVisible.Right;
+                    g.DrawLine(penDotted, xRight, bannerHeight, xRight, bannerHeight + dayHeaderHeight);
+                }
             }
         }
 
-        // AddMenu kept or adapted to existing logic (uses menuStrip1 from designer)
+        // AddMenu kept or adapted to existing logic
         private void AddMenu()
         {
             var menu = this.menuStrip1;
