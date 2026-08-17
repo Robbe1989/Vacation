@@ -32,13 +32,14 @@ namespace VacationApp
                 LoadCalendar((int)nudYear.Value);
             };
 
+            // Header repaint sync
             dgvCalendar.Scroll += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnWidthChanged += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
 
-            // Erstes Laden erst nach dem Anzeigen, damit das DGV Layout/Spaltenrechtecke hat
+            // Erstes Laden nach Form.Shown (sicher, dass DGV Layout hat)
             this.Shown += (s, e) =>
             {
                 this.BeginInvoke(new Action(() =>
@@ -186,7 +187,7 @@ namespace VacationApp
             }
         }
 
-        // Header: Monatsbanner (alternierend), Tagesspalten, Wochenend‑Shading; KW wurden entfernt.
+        // Zeichnet Monatsbanner, Tagesköpfe, Wochenendshading und KW-Badges über Montagen
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -211,7 +212,7 @@ namespace VacationApp
                 using var penBanner = new Pen(Color.LightGray);
                 using var sfCenterTop = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
-                // Monatsbanner (alternierend)
+                // Monatsbanner
                 for (int month = 1; month <= 12; month++)
                 {
                     DateTime monthStart;
@@ -236,20 +237,12 @@ namespace VacationApp
                     Rectangle rectEnd = Rectangle.Empty;
                     for (int c = colStart; c <= colEnd; c++)
                     {
-                        try
-                        {
-                            var r = dgvCalendar.GetColumnDisplayRectangle(c, true);
-                            if (r.Width > 0) { rectStart = r; break; }
-                        }
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectStart = r; break; } }
                         catch { }
                     }
                     for (int c = colEnd; c >= colStart; c--)
                     {
-                        try
-                        {
-                            var r = dgvCalendar.GetColumnDisplayRectangle(c, true);
-                            if (r.Width > 0) { rectEnd = r; break; }
-                        }
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectEnd = r; break; } }
                         catch { }
                     }
 
@@ -283,7 +276,7 @@ namespace VacationApp
                     g.DrawLine(penGrid, 0, bannerHeight, panelMonthHeader.Width, bannerHeight);
                 }
 
-                // Tage + Wochentage + Wochenendshading
+                // Tage + Wochenenden + Separatoren
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
                 using (var penDotted = new Pen(Color.Gray))
@@ -307,9 +300,7 @@ namespace VacationApp
 
                         var date = firstOfYear.AddDays(d);
                         if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
-                        {
                             g.FillRectangle(brushWeekend, cellRect);
-                        }
 
                         g.DrawLine(penDotted, cellRect.Left, bannerHeight, cellRect.Left, bannerHeight + dayHeaderHeight);
 
@@ -323,6 +314,7 @@ namespace VacationApp
                         g.DrawString(weekdayShort, weekdayFont, Brushes.DarkSlateGray, weekdayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                     }
 
+                    // rightmost separator
                     int lastDayCol = dgvCalendar.Columns.Count - 2;
                     if (lastDayCol >= 1)
                     {
@@ -337,6 +329,48 @@ namespace VacationApp
                         }
                         catch { }
                     }
+                }
+
+                // KW‑Badges: über jedem sichtbaren Montag zeichnen
+                var calendar = CultureInfo.CurrentCulture.Calendar;
+                var weekRule = CalendarWeekRule.FirstFourDayWeek;
+                var firstDayOfWeek = DayOfWeek.Monday;
+
+                using var badgeBrush = new SolidBrush(Color.FromArgb(48, 191, 180));
+                using var badgeTextBrush = Brushes.White;
+                using var badgePen = new Pen(Color.FromArgb(30, 160, 150));
+                using var badgeFont = new Font(this.Font.FontFamily, Math.Max(9f, this.Font.Size - 1f), FontStyle.Bold);
+
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    var date = firstOfYear.AddDays(d);
+                    if (date.DayOfWeek != DayOfWeek.Monday) continue;
+
+                    int colIndex = 1 + d;
+                    Rectangle rect;
+                    try { rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true); }
+                    catch { continue; }
+
+                    if (rect.Width == 0 && rect.Right <= 0) continue;
+                    if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
+
+                    int badgeW = 28;
+                    int badgeH = 20;
+                    int badgeX = rect.X + Math.Max(0, (rect.Width - badgeW) / 2);
+                    int badgeY = Math.Max(2, (bannerHeight - badgeH) / 4);
+
+                    var badgeRect = new Rectangle(badgeX, badgeY, badgeW, badgeH);
+
+                    int kw;
+                    try { kw = calendar.GetWeekOfYear(date, weekRule, firstDayOfWeek); }
+                    catch { kw = ((date.DayOfYear + 6) / 7); }
+
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.FillRoundedRectangle(badgeBrush, badgeRect, 6);
+                    g.DrawRoundedRectangle(badgePen, badgeRect, 6);
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString(kw.ToString(), badgeFont, badgeTextBrush, badgeRect, sf);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
                 }
             }
             catch (Exception ex)
@@ -370,6 +404,35 @@ namespace VacationApp
             };
             menuOptions.DropDownItems.Add(menuDepartments);
             menu.Items.Add(menuOptions);
+        }
+    }
+
+    // Hilfsmethoden für abgerundete Rechtecke
+    static class GraphicsExtensions
+    {
+        public static void FillRoundedRectangle(this Graphics g, Brush brush, Rectangle bounds, int radius)
+        {
+            using var path = RoundedRectPath(bounds, radius);
+            g.FillPath(brush, path);
+        }
+
+        public static void DrawRoundedRectangle(this Graphics g, Pen pen, Rectangle bounds, int radius)
+        {
+            using var path = RoundedRectPath(bounds, radius);
+            g.DrawPath(pen, path);
+        }
+
+        private static System.Drawing.Drawing2D.GraphicsPath RoundedRectPath(Rectangle rect, int radius)
+        {
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            int d = radius * 2;
+            path.StartFigure();
+            path.AddArc(rect.Left, rect.Top, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Top, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.Left, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
     }
 }
