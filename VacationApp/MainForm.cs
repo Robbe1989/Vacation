@@ -442,9 +442,9 @@ using var weekBorderPen = new Pen(Color.DimGray, 2);
 g.DrawLine(
     weekBorderPen,
     weekRect.Right,
-    0,
+    bannerHeight,
     weekRect.Right,
-    panelMonthHeader.Height);
+    bannerHeight + weekRowHeight + dayHeaderHeight);
 
     if (weekRect.Width > 4)
     {
