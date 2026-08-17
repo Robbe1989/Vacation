@@ -187,7 +187,7 @@ namespace VacationApp
             }
         }
 
-        // Zeichnet Monatsbanner, Tagesköpfe, Wochenendshading und KW-Badges über Montagen
+        // Header: Monat-Banner, KW-Row (dauerhaft), Tag-Header (Tage + Wochentage)
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -203,8 +203,11 @@ namespace VacationApp
                 var firstOfYear = new DateTime(year, 1, 1);
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-                int bannerHeight = Math.Max(36, panelMonthHeader.Height * 55 / 100);
-                int dayHeaderHeight = panelMonthHeader.Height - bannerHeight;
+                // Layout: banner (Monatsname), dann KW-Row, dann day header
+                int bannerHeight = Math.Max(36, panelMonthHeader.Height * 45 / 100);
+                int weekRowHeight = Math.Max(20, panelMonthHeader.Height * 18 / 100); // KW row height
+                int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - weekRowHeight;
+                if (dayHeaderHeight < 16) dayHeaderHeight = 16;
 
                 var colorOdd = Color.FromArgb(255, 250, 205);
                 var colorEven = Color.FromArgb(200, 235, 255);
@@ -212,11 +215,10 @@ namespace VacationApp
                 using var penBanner = new Pen(Color.LightGray);
                 using var sfCenterTop = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
-                // Monatsbanner
+                // 1) Monatsbanner (alternierend)
                 for (int month = 1; month <= 12; month++)
                 {
-                    DateTime monthStart;
-                    DateTime monthEnd;
+                    DateTime monthStart, monthEnd;
                     try
                     {
                         monthStart = new DateTime(year, month, 1);
@@ -245,7 +247,6 @@ namespace VacationApp
                         try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectEnd = r; break; } }
                         catch { }
                     }
-
                     if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
 
                     int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
@@ -258,7 +259,6 @@ namespace VacationApp
 
                     var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
                     using var brushBanner = new SolidBrush(fillColor);
-
                     g.FillRectangle(brushBanner, monthRect);
                     g.DrawRectangle(penBanner, monthRect);
 
@@ -267,16 +267,25 @@ namespace VacationApp
                     g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
                 }
 
-                // Tag-Header-Grund
+                // 2) KW-Row background
+                using (var brushWeekBg = new SolidBrush(Color.FromArgb(245, 245, 245)))
+                using (var penWeek = new Pen(Color.LightGray))
+                {
+                    var weekAreaRect = new Rectangle(0, bannerHeight, panelMonthHeader.Width, weekRowHeight);
+                    g.FillRectangle(brushWeekBg, weekAreaRect);
+                    g.DrawLine(penWeek, 0, bannerHeight + weekRowHeight - 1, panelMonthHeader.Width, bannerHeight + weekRowHeight - 1);
+                }
+
+                // 3) Day header background (below KW row)
                 using (var brushDayBg = new SolidBrush(Color.White))
                 using (var penGrid = new Pen(Color.LightGray))
                 {
-                    var dayAreaRect = new Rectangle(0, bannerHeight, panelMonthHeader.Width, dayHeaderHeight);
+                    var dayAreaRect = new Rectangle(0, bannerHeight + weekRowHeight, panelMonthHeader.Width, dayHeaderHeight);
                     g.FillRectangle(brushDayBg, dayAreaRect);
-                    g.DrawLine(penGrid, 0, bannerHeight, panelMonthHeader.Width, bannerHeight);
+                    g.DrawLine(penGrid, 0, bannerHeight + weekRowHeight, panelMonthHeader.Width, bannerHeight + weekRowHeight);
                 }
 
-                // Tage + Wochenenden + Separatoren
+                // 4) Draw each visible day: day-of-month and weekday; weekends shaded
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
                 using (var penDotted = new Pen(Color.Gray))
@@ -296,13 +305,14 @@ namespace VacationApp
 
                         int x = rect.X;
                         int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
-                        var cellRect = new Rectangle(x, bannerHeight, w, dayHeaderHeight);
+                        var cellRect = new Rectangle(x, bannerHeight + weekRowHeight, w, dayHeaderHeight);
 
                         var date = firstOfYear.AddDays(d);
                         if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                             g.FillRectangle(brushWeekend, cellRect);
 
-                        g.DrawLine(penDotted, cellRect.Left, bannerHeight, cellRect.Left, bannerHeight + dayHeaderHeight);
+                        // dotted separator
+                        g.DrawLine(penDotted, cellRect.Left, bannerHeight + weekRowHeight, cellRect.Left, bannerHeight + weekRowHeight + dayHeaderHeight);
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
                         var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
@@ -324,52 +334,71 @@ namespace VacationApp
                             if (lastRect.Width > 0)
                             {
                                 int xRight = lastRect.Right;
-                                g.DrawLine(penDotted, xRight, bannerHeight, xRight, bannerHeight + dayHeaderHeight);
+                                g.DrawLine(penDotted, xRight, bannerHeight + weekRowHeight, xRight, bannerHeight + weekRowHeight + dayHeaderHeight);
                             }
                         }
                         catch { }
                     }
                 }
 
-                // KW‑Badges: über jedem sichtbaren Montag zeichnen
+                // 5) Draw week numbers as continuous blocks spanning Mon..Sun
                 var calendar = CultureInfo.CurrentCulture.Calendar;
                 var weekRule = CalendarWeekRule.FirstFourDayWeek;
                 var firstDayOfWeek = DayOfWeek.Monday;
 
-                using var badgeBrush = new SolidBrush(Color.FromArgb(48, 191, 180));
-                using var badgeTextBrush = Brushes.White;
-                using var badgePen = new Pen(Color.FromArgb(30, 160, 150));
-                using var badgeFont = new Font(this.Font.FontFamily, Math.Max(9f, this.Font.Size - 1f), FontStyle.Bold);
+                using var weekFill = new SolidBrush(Color.FromArgb(48, 191, 180)); // badge color
+                using var weekTextBrush = Brushes.White;
+                using var weekPen = new Pen(Color.FromArgb(30, 160, 150));
+                using var weekFont = new Font(this.Font.FontFamily, Math.Max(9f, this.Font.Size - 1f), FontStyle.Bold);
 
+                // iterate through weeks: find every Monday in the year, draw block spanning Mon..Sun
                 for (int d = 0; d < daysInYear; d++)
                 {
                     var date = firstOfYear.AddDays(d);
                     if (date.DayOfWeek != DayOfWeek.Monday) continue;
 
-                    int colIndex = 1 + d;
-                    Rectangle rect;
-                    try { rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true); }
-                    catch { continue; }
+                    int mondayIndex = d;
+                    int sundayIndex = Math.Min(daysInYear - 1, d + 6);
 
-                    if (rect.Width == 0 && rect.Right <= 0) continue;
-                    if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
+                    int colStart = 1 + mondayIndex;
+                    int colEnd = 1 + sundayIndex;
 
-                    int badgeW = 28;
-                    int badgeH = 20;
-                    int badgeX = rect.X + Math.Max(0, (rect.Width - badgeW) / 2);
-                    int badgeY = Math.Max(2, (bannerHeight - badgeH) / 4);
+                    Rectangle rectStart = Rectangle.Empty;
+                    Rectangle rectEnd = Rectangle.Empty;
+                    // find first visible column in the week
+                    for (int c = colStart; c <= colEnd; c++)
+                    {
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectStart = r; break; } }
+                        catch { }
+                    }
+                    // find last visible column in the week
+                    for (int c = colEnd; c >= colStart; c--)
+                    {
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectEnd = r; break; } }
+                        catch { }
+                    }
+                    if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
 
-                    var badgeRect = new Rectangle(badgeX, badgeY, badgeW, badgeH);
+                    int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
+                    int xEnd = rectEnd.IsEmpty ? rectStart.Right : rectEnd.Right;
+                    if (xEnd <= xStart) continue;
 
+                    var weekRect = new Rectangle(xStart, bannerHeight + 2, Math.Min(xEnd - xStart, panelMonthHeader.Width - xStart), Math.Max(12, weekRowHeight - 4));
+                    if (weekRect.Width <= 4) continue;
+
+                    // compute week number
                     int kw;
                     try { kw = calendar.GetWeekOfYear(date, weekRule, firstDayOfWeek); }
                     catch { kw = ((date.DayOfYear + 6) / 7); }
 
+                    // draw filled rounded rect for week (so it looks like a persistent strip)
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                    g.FillRoundedRectangle(badgeBrush, badgeRect, 6);
-                    g.DrawRoundedRectangle(badgePen, badgeRect, 6);
+                    g.FillRoundedRectangle(weekFill, weekRect, 6);
+                    g.DrawRoundedRectangle(weekPen, weekRect, 6);
+
+                    // draw KW centered
                     var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    g.DrawString(kw.ToString(), badgeFont, badgeTextBrush, badgeRect, sf);
+                    g.DrawString(kw.ToString(), weekFont, weekTextBrush, weekRect, sf);
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
                 }
             }
