@@ -186,7 +186,7 @@ namespace VacationApp
             }
         }
 
-        // Header: Monatsbanner (alternierend), Tagesspalten, Wochenend‑Shading; KW wurden entfernt.
+        // Header: Monatsbanner (alternierend), KW-Zeile (Zahlen, Montag als Start), Tagesspalten, Wochenend‑Shading.
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -202,8 +202,11 @@ namespace VacationApp
                 var firstOfYear = new DateTime(year, 1, 1);
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-                int bannerHeight = Math.Max(36, panelMonthHeader.Height * 55 / 100);
-                int dayHeaderHeight = panelMonthHeader.Height - bannerHeight;
+                // Layout: banner + weekRow + dayHeader
+                int bannerHeight = Math.Max(36, panelMonthHeader.Height * 45 / 100);
+                int weekRowHeight = Math.Max(18, panelMonthHeader.Height * 16 / 100);
+                int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - weekRowHeight;
+                if (dayHeaderHeight < 12) dayHeaderHeight = 12;
 
                 var colorOdd = Color.FromArgb(255, 250, 205);
                 var colorEven = Color.FromArgb(200, 235, 255);
@@ -248,128 +251,5 @@ namespace VacationApp
                         try
                         {
                             var r = dgvCalendar.GetColumnDisplayRectangle(c, true);
-                            if (r.Width > 0) { rectEnd = r; break; }
-                        }
-                        catch { }
-                    }
-
-                    if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
-
-                    int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
-                    int xEnd = rectEnd.IsEmpty ? rectStart.Right : rectEnd.Right;
-                    if (xEnd <= xStart) continue;
-
-                    int width = xEnd - xStart;
-                    var monthRect = new Rectangle(xStart, 0, Math.Min(width, panelMonthHeader.Width - xStart), bannerHeight - 1);
-                    if (monthRect.Width <= 2) continue;
-
-                    var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
-                    using var brushBanner = new SolidBrush(fillColor);
-
-                    g.FillRectangle(brushBanner, monthRect);
-                    g.DrawRectangle(penBanner, monthRect);
-
-                    var monthName = new DateTime(year, month, 1).ToString("MMMM", CultureInfo.CurrentCulture);
-                    using var bigFont = new Font(this.Font.FontFamily, Math.Max(12f, this.Font.Size + 2f), FontStyle.Bold);
-                    g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
-                }
-
-                // Tag-Header-Grund
-                using (var brushDayBg = new SolidBrush(Color.White))
-                using (var penGrid = new Pen(Color.LightGray))
-                {
-                    var dayAreaRect = new Rectangle(0, bannerHeight, panelMonthHeader.Width, dayHeaderHeight);
-                    g.FillRectangle(brushDayBg, dayAreaRect);
-                    g.DrawLine(penGrid, 0, bannerHeight, panelMonthHeader.Width, bannerHeight);
-                }
-
-                // Tage + Wochentage + Wochenendshading
-                using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
-                using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
-                using (var penDotted = new Pen(Color.Gray))
-                using (var brushWeekend = new SolidBrush(Color.FromArgb(240, 240, 240)))
-                {
-                    penDotted.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
-
-                    for (int d = 0; d < daysInYear; d++)
-                    {
-                        int colIndex = 1 + d;
-                        Rectangle rect;
-                        try { rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true); }
-                        catch { continue; }
-
-                        if (rect.Width == 0 && rect.Right <= 0) continue;
-                        if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
-
-                        int x = rect.X;
-                        int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
-                        var cellRect = new Rectangle(x, bannerHeight, w, dayHeaderHeight);
-
-                        var date = firstOfYear.AddDays(d);
-                        if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
-                        {
-                            g.FillRectangle(brushWeekend, cellRect);
-                        }
-
-                        g.DrawLine(penDotted, cellRect.Left, bannerHeight, cellRect.Left, bannerHeight + dayHeaderHeight);
-
-                        var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
-                        var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
-
-                        string dayText = date.Day.ToString("00");
-                        string weekdayShort = date.ToString("ddd", CultureInfo.CurrentCulture);
-
-                        g.DrawString(dayText, smallFont, Brushes.Black, dayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
-                        g.DrawString(weekdayShort, weekdayFont, Brushes.DarkSlateGray, weekdayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
-                    }
-
-                    int lastDayCol = dgvCalendar.Columns.Count - 2;
-                    if (lastDayCol >= 1)
-                    {
-                        try
-                        {
-                            var lastRect = dgvCalendar.GetColumnDisplayRectangle(lastDayCol, true);
-                            if (lastRect.Width > 0)
-                            {
-                                int xRight = lastRect.Right;
-                                g.DrawLine(penDotted, xRight, bannerHeight, xRight, bannerHeight + dayHeaderHeight);
-                            }
-                        }
-                        catch { }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("PanelMonthHeader_Paint error: " + ex);
-            }
-        }
-
-        private void AddMenu()
-        {
-            var menu = this.menuStrip1;
-            menu.Items.Clear();
-
-            var menuMitarbeiter = new ToolStripMenuItem("Mitarbeiter");
-            var menuOpen = new ToolStripMenuItem("Verwalten");
-            menuOpen.Click += (s, e) =>
-            {
-                using var f = new Forms.EmployeesForm();
-                f.ShowDialog(this);
-                LoadCalendar((int)nudYear.Value);
-            };
-            menuMitarbeiter.DropDownItems.Add(menuOpen);
-            menu.Items.Add(menuMitarbeiter);
-
-            var menuOptions = new ToolStripMenuItem("Optionen");
-            var menuDepartments = new ToolStripMenuItem("Abteilungen");
-            menuDepartments.Click += (s, e) =>
-            {
-                using var f = new Forms.DepartmentsForm();
-                f.ShowDialog(this);
-            };
-            menuOptions.DropDownItems.Add(menuDepartments);
-            menu.Items.Add(menuOptions);
-        }
-    }
-}
+                            if (r.Width > 0) { rectEnd*
+
