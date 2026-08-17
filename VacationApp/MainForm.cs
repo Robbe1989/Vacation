@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using VacationApp.Data;
@@ -18,6 +19,11 @@ namespace VacationApp
             AddMenu();
             Database.Init();
 
+            // Make selection color white so it doesn't show as blue
+            dgvCalendar.DefaultCellStyle.SelectionBackColor = Color.White;
+            dgvCalendar.DefaultCellStyle.SelectionForeColor = Color.Black;
+            dgvCalendar.ClearSelection();
+
             // Hook events
             nudYear.ValueChanged += (s, e) => LoadCalendar((int)nudYear.Value);
             btnManageVacations.Click += (s, e) =>
@@ -35,7 +41,16 @@ namespace VacationApp
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
 
             nudYear.Value = DateTime.Now.Year;
+            // initial load
             LoadCalendar((int)nudYear.Value);
+
+            // Ensure header and column layout are correct after the form is shown
+            this.Shown += (s, e) =>
+            {
+                // reload to ensure dgv has measured columns and display rectangles
+                LoadCalendar((int)nudYear.Value);
+                panelMonthHeader.Invalidate();
+            };
         }
 
         private void LoadCalendar(int year)
@@ -65,7 +80,7 @@ namespace VacationApp
                 };
                 dgvCalendar.Columns.Add(colName);
 
-                // Add day columns; set weekend default background
+                // Add day columns; set weekend default background and selection colors
                 for (int d = 0; d < daysInYear; d++)
                 {
                     var date = firstOfYear.AddDays(d);
@@ -84,8 +99,15 @@ namespace VacationApp
                         col.DefaultCellStyle = new DataGridViewCellStyle
                         {
                             BackColor = Color.FromArgb(240, 240, 240),
-                            SelectionBackColor = Color.FromArgb(200, 200, 200)
+                            SelectionBackColor = Color.FromArgb(240, 240, 240),
+                            SelectionForeColor = Color.Black
                         };
+                    }
+                    else
+                    {
+                        // ensure normal cells also keep white when selected
+                        col.DefaultCellStyle.SelectionBackColor = Color.White;
+                        col.DefaultCellStyle.SelectionForeColor = Color.Black;
                     }
 
                     dgvCalendar.Columns.Add(col);
@@ -150,8 +172,10 @@ namespace VacationApp
                             if (dayMarks[d])
                             {
                                 var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
-                                // explizit setzen, damit Urlaubs-Farbe sichtbar ist (überschreibt Default)
-                                cell.Style.BackColor = Color.LightSalmon;
+                                // set vacation color and make selection color equal so it doesn't turn blue when selected
+                                var vacColor = Color.LightSalmon;
+                                cell.Style.BackColor = vacColor;
+                                cell.Style.SelectionBackColor = vacColor;
                                 cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                                 cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
                             }
@@ -165,6 +189,9 @@ namespace VacationApp
 
                 dgvCalendar.ResumeLayout();
 
+                // ensure nothing is selected (avoids blue)
+                dgvCalendar.ClearSelection();
+
                 panelMonthHeader.Invalidate();
             }
             catch (Exception ex)
@@ -173,9 +200,7 @@ namespace VacationApp
             }
         }
 
-        // Zeichnet pro Monat ein Banner über den entsprechenden Tages-Spalten.
-        // Die Tageszahlen werden als Tag-im-Monat (1..N) angezeigt.
-        // Zusätzlich werden die Tage für Sa/So in der Header-Grafik hellgrau hinterlegt.
+        // Zeichnet: Monats‑Banner (alternierend), Tag-Köpfe, Wochenend‑Shading, und Kalenderwochen (KW) als kleine Badges über den Montagen.
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -196,11 +221,14 @@ namespace VacationApp
                 int bannerHeight = Math.Max(36, panelMonthHeader.Height * 55 / 100);
                 int dayHeaderHeight = panelMonthHeader.Height - bannerHeight;
 
-                // Für jeden Monat: Bestimme sichtbare Spalten und zeichne Banner nur über diesen Spalten
-                using var brushBanner = new SolidBrush(Color.FromArgb(255, 250, 205)); // pale yellow
+                // Farben für abwechselnde Monate
+                var colorOdd = Color.FromArgb(255, 250, 205);   // hellgelb
+                var colorEven = Color.FromArgb(200, 235, 255);  // hellblau
+
                 using var penBanner = new Pen(Color.LightGray);
                 using var sfCenterTop = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
+                // 1) Monatsbanner (alternierend)
                 for (int month = 1; month <= 12; month++)
                 {
                     DateTime monthStart;
@@ -263,17 +291,21 @@ namespace VacationApp
                     var monthRect = new Rectangle(xStart, 0, Math.Min(width, panelMonthHeader.Width - xStart), bannerHeight - 1);
                     if (monthRect.Width <= 2) continue;
 
+                    // choose alternating color
+                    var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
+                    using var brushBanner = new SolidBrush(fillColor);
+
                     // draw banner background & border
                     g.FillRectangle(brushBanner, monthRect);
                     g.DrawRectangle(penBanner, monthRect);
 
                     // draw full month name centered in this banner
-                    var monthName = new DateTime(year, month, 1).ToString("MMMM", System.Globalization.CultureInfo.CurrentCulture);
+                    var monthName = new DateTime(year, month, 1).ToString("MMMM", CultureInfo.CurrentCulture);
                     using var bigFont = new Font(this.Font.FontFamily, Math.Max(12f, this.Font.Size + 2f), FontStyle.Bold);
                     g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
                 }
 
-                // draw day header background (below banners)
+                // 2) Day header base
                 using (var brushDayBg = new SolidBrush(Color.White))
                 using (var penGrid = new Pen(Color.LightGray))
                 {
@@ -282,7 +314,7 @@ namespace VacationApp
                     g.DrawLine(penGrid, 0, bannerHeight, panelMonthHeader.Width, bannerHeight);
                 }
 
-                // draw each visible day: day-of-month and weekday; weekends get light-gray background here too
+                // 3) draw each visible day: day-of-month and weekday; weekends shaded
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
                 using (var penDotted = new Pen(Color.Gray))
@@ -326,13 +358,13 @@ namespace VacationApp
                         var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
 
                         string dayText = date.Day.ToString("00"); // day-of-month (resets each month)
-                        string weekdayShort = date.ToString("ddd", System.Globalization.CultureInfo.CurrentCulture);
+                        string weekdayShort = date.ToString("ddd", CultureInfo.CurrentCulture);
 
                         g.DrawString(dayText, smallFont, Brushes.Black, dayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                         g.DrawString(weekdayShort, weekdayFont, Brushes.DarkSlateGray, weekdayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                     }
 
-                    // draw rightmost separator for last visible day column
+                    // rightmost separator for last visible day column
                     int lastDayCol = dgvCalendar.Columns.Count - 2;
                     if (lastDayCol >= 1)
                     {
@@ -348,10 +380,69 @@ namespace VacationApp
                         catch { }
                     }
                 }
+
+                // 4) Draw week numbers as badges above/inside the banner, aligned to Mondays
+                // ISO week rule: FirstFourDayWeek, week starts Monday
+                var calendar = CultureInfo.CurrentCulture.Calendar;
+                var weekRule = CalendarWeekRule.FirstFourDayWeek;
+                var firstDayOfWeek = DayOfWeek.Monday;
+
+                using var badgeBrush = new SolidBrush(Color.FromArgb(48, 191, 180)); // teal-ish
+                using var badgeTextBrush = Brushes.White;
+                using var badgePen = new Pen(Color.FromArgb(30, 160, 150));
+                using var badgeFont = new Font(this.Font.FontFamily, Math.Max(9f, this.Font.Size - 1f), FontStyle.Bold);
+
+                // Iterate all days; draw badge at Monday positions
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    var date = firstOfYear.AddDays(d);
+                    if (date.DayOfWeek != DayOfWeek.Monday) continue;
+
+                    int colIndex = 1 + d;
+                    Rectangle rect;
+                    try
+                    {
+                        rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true);
+                    }
+                    catch { continue; }
+
+                    // skip invisible
+                    if (rect.Width == 0 && rect.Right <= 0) continue;
+                    if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
+
+                    // compute badge rectangle: place near top inside banner area (a bit inset)
+                    int badgeW = 28;
+                    int badgeH = 20;
+                    int badgeX = rect.X + Math.Max(0, (rect.Width - badgeW) / 2);
+                    int badgeY = Math.Max(2, (bannerHeight - badgeH) / 4); // near top of banner
+
+                    var badgeRect = new Rectangle(badgeX, badgeY, badgeW, badgeH);
+
+                    // compute week number
+                    int kw;
+                    try
+                    {
+                        kw = calendar.GetWeekOfYear(date, weekRule, firstDayOfWeek);
+                    }
+                    catch
+                    {
+                        // fallback: compute simple week as (dayOfYear+6)/7
+                        kw = ((date.DayOfYear + 6) / 7);
+                    }
+
+                    // draw rounded rect badge (ellipse-like)
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.FillRoundedRectangle(badgeBrush, badgeRect, 6);
+                    g.DrawRoundedRectangle(badgePen, badgeRect, 6);
+
+                    // draw week number centered
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString(kw.ToString(), badgeFont, badgeTextBrush, badgeRect, sf);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+                }
             }
             catch (Exception ex)
             {
-                // defensive: avoid crashing paint handler
                 System.Diagnostics.Debug.WriteLine("PanelMonthHeader_Paint error: " + ex);
             }
         }
@@ -382,6 +473,35 @@ namespace VacationApp
             };
             menuOptions.DropDownItems.Add(menuDepartments);
             menu.Items.Add(menuOptions);
+        }
+    }
+
+    // Erweiterungsklasse für einfaches Zeichnen abgerundeter Rechtecke
+    static class GraphicsExtensions
+    {
+        public static void FillRoundedRectangle(this Graphics g, Brush brush, Rectangle bounds, int radius)
+        {
+            using var path = RoundedRectPath(bounds, radius);
+            g.FillPath(brush, path);
+        }
+
+        public static void DrawRoundedRectangle(this Graphics g, Pen pen, Rectangle bounds, int radius)
+        {
+            using var path = RoundedRectPath(bounds, radius);
+            g.DrawPath(pen, path);
+        }
+
+        private static System.Drawing.Drawing2D.GraphicsPath RoundedRectPath(Rectangle rect, int radius)
+        {
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            int d = radius * 2;
+            path.StartFigure();
+            path.AddArc(rect.Left, rect.Top, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Top, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.Left, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
     }
 }
