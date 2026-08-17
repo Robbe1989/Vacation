@@ -228,6 +228,8 @@ namespace VacationApp
                 MessageBox.Show("Fehler beim Laden des Tageskalenders: " + ex.Message);
             }
         }
+MessageBox.Show(
+    $"Rows: {dgvCalendar.Rows.Count}, Columns: {dgvCalendar.Columns.Count}");
 
         // Draw header: months (alternating colors), KW row (numbers per week, Monday start), day headers and weekends shading
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
