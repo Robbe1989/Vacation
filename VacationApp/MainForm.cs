@@ -187,7 +187,7 @@ namespace VacationApp
             }
         }
 
-        // Header: Monat-Banner, KW-Row (dauerhaft), Tag-Header (Tage + Wochentage)
+        // Header: Monatsbanner, KW-Row mit nur Zahlen pro Woche, Tag-Header (Tage + Wochentage)
         private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -203,9 +203,9 @@ namespace VacationApp
                 var firstOfYear = new DateTime(year, 1, 1);
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-                // Layout: banner (Monatsname), dann KW-Row, dann day header
+                // Layout: banner (Monatsname), then week-number row, then day header
                 int bannerHeight = Math.Max(36, panelMonthHeader.Height * 45 / 100);
-                int weekRowHeight = Math.Max(20, panelMonthHeader.Height * 18 / 100); // KW row height
+                int weekRowHeight = Math.Max(18, panelMonthHeader.Height * 16 / 100); // KW row height
                 int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - weekRowHeight;
                 if (dayHeaderHeight < 16) dayHeaderHeight = 16;
 
@@ -267,7 +267,7 @@ namespace VacationApp
                     g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
                 }
 
-                // 2) KW-Row background
+                // 2) KW-Row background (light)
                 using (var brushWeekBg = new SolidBrush(Color.FromArgb(245, 245, 245)))
                 using (var penWeek = new Pen(Color.LightGray))
                 {
@@ -276,7 +276,7 @@ namespace VacationApp
                     g.DrawLine(penWeek, 0, bannerHeight + weekRowHeight - 1, panelMonthHeader.Width, bannerHeight + weekRowHeight - 1);
                 }
 
-                // 3) Day header background (below KW row)
+                // 3) Day header background
                 using (var brushDayBg = new SolidBrush(Color.White))
                 using (var penGrid = new Pen(Color.LightGray))
                 {
@@ -285,7 +285,7 @@ namespace VacationApp
                     g.DrawLine(penGrid, 0, bannerHeight + weekRowHeight, panelMonthHeader.Width, bannerHeight + weekRowHeight);
                 }
 
-                // 4) Draw each visible day: day-of-month and weekday; weekends shaded
+                // 4) Draw days (day number + weekday) and weekends shading
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
                 using (var penDotted = new Pen(Color.Gray))
@@ -311,7 +311,6 @@ namespace VacationApp
                         if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                             g.FillRectangle(brushWeekend, cellRect);
 
-                        // dotted separator
                         g.DrawLine(penDotted, cellRect.Left, bannerHeight + weekRowHeight, cellRect.Left, bannerHeight + weekRowHeight + dayHeaderHeight);
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
@@ -324,7 +323,6 @@ namespace VacationApp
                         g.DrawString(weekdayShort, weekdayFont, Brushes.DarkSlateGray, weekdayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                     }
 
-                    // rightmost separator
                     int lastDayCol = dgvCalendar.Columns.Count - 2;
                     if (lastDayCol >= 1)
                     {
@@ -341,17 +339,14 @@ namespace VacationApp
                     }
                 }
 
-                // 5) Draw week numbers as continuous blocks spanning Mon..Sun
+                // 5) Draw week numbers as plain centered numbers spanning Mon..Sun
                 var calendar = CultureInfo.CurrentCulture.Calendar;
                 var weekRule = CalendarWeekRule.FirstFourDayWeek;
                 var firstDayOfWeek = DayOfWeek.Monday;
 
-                using var weekFill = new SolidBrush(Color.FromArgb(48, 191, 180)); // badge color
-                using var weekTextBrush = Brushes.White;
-                using var weekPen = new Pen(Color.FromArgb(30, 160, 150));
+                using var weekTextBrush = Brushes.Black;
                 using var weekFont = new Font(this.Font.FontFamily, Math.Max(9f, this.Font.Size - 1f), FontStyle.Bold);
 
-                // iterate through weeks: find every Monday in the year, draw block spanning Mon..Sun
                 for (int d = 0; d < daysInYear; d++)
                 {
                     var date = firstOfYear.AddDays(d);
@@ -386,20 +381,13 @@ namespace VacationApp
                     var weekRect = new Rectangle(xStart, bannerHeight + 2, Math.Min(xEnd - xStart, panelMonthHeader.Width - xStart), Math.Max(12, weekRowHeight - 4));
                     if (weekRect.Width <= 4) continue;
 
-                    // compute week number
                     int kw;
                     try { kw = calendar.GetWeekOfYear(date, weekRule, firstDayOfWeek); }
                     catch { kw = ((date.DayOfYear + 6) / 7); }
 
-                    // draw filled rounded rect for week (so it looks like a persistent strip)
-                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                    g.FillRoundedRectangle(weekFill, weekRect, 6);
-                    g.DrawRoundedRectangle(weekPen, weekRect, 6);
-
-                    // draw KW centered
+                    // draw KW number centered (no background fill)
                     var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
                     g.DrawString(kw.ToString(), weekFont, weekTextBrush, weekRect, sf);
-                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
                 }
             }
             catch (Exception ex)
@@ -436,7 +424,7 @@ namespace VacationApp
         }
     }
 
-    // Hilfsmethoden für abgerundete Rechtecke
+    // Hilfsmethoden für abgerundete Rechtecke (noch vorhanden falls benötigt)
     static class GraphicsExtensions
     {
         public static void FillRoundedRectangle(this Graphics g, Brush brush, Rectangle bounds, int radius)
