@@ -1,6 +1,6 @@
-﻿// name=VacationApp/MainForm.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using VacationApp.Data;
@@ -10,10 +10,12 @@ namespace VacationApp
 {
     public partial class MainForm : Form
     {
+        private const int DayColumnWidth = 20; // pixels per day column
+
         public MainForm()
         {
             InitializeComponent();
-            AddMenu(); // previous menu logic
+            AddMenu();
             Database.Init();
 
             // Hook events
@@ -25,7 +27,6 @@ namespace VacationApp
                 LoadCalendar((int)nudYear.Value);
             };
 
-            // initial load
             nudYear.Value = DateTime.Now.Year;
             LoadCalendar((int)nudYear.Value);
         }
@@ -34,59 +35,130 @@ namespace VacationApp
         {
             try
             {
+                dgvCalendar.SuspendLayout();
                 dgvCalendar.Columns.Clear();
+                dgvCalendar.Rows.Clear();
+
                 var employees = Database.GetAllEmployees();
                 var vacations = Database.GetVacationsForYear(year);
 
-                // Columns: Name, Jan..Dec, Total
-                var colName = new DataGridViewTextBoxColumn() { Name = "colName", HeaderText = "Mitarbeiter", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
+                // Number of days in year
+                int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
+                var firstOfYear = new DateTime(year, 1, 1);
+
+                // Add Name column (frozen)
+                var colName = new DataGridViewTextBoxColumn
+                {
+                    Name = "colName",
+                    HeaderText = "Mitarbeiter",
+                    ReadOnly = true,
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+                    Width = 200,
+                    Frozen = true
+                };
                 dgvCalendar.Columns.Add(colName);
 
-                for (int m = 1; m <= 12; m++)
+                // Add day columns
+                for (int d = 0; d < daysInYear; d++)
                 {
-                    var monthName = new DateTime(year, m, 1).ToString("MMM", System.Globalization.CultureInfo.CurrentCulture);
-                    dgvCalendar.Columns.Add(new DataGridViewTextBoxColumn() { Name = $"m{m}", HeaderText = monthName, ReadOnly = true, Width = 60 });
+                    var date = firstOfYear.AddDays(d);
+                    var col = new DataGridViewTextBoxColumn
+                    {
+                        Name = $"d{d + 1}",
+                        HeaderText = date.Day.ToString(), // show day number
+                        ReadOnly = true,
+                        Width = DayColumnWidth,
+                        ToolTipText = date.ToString("dd.MM.yyyy")
+                    };
+                    dgvCalendar.Columns.Add(col);
                 }
 
-                dgvCalendar.Columns.Add(new DataGridViewTextBoxColumn() { Name = "colTotal", HeaderText = "Total", ReadOnly = true, Width = 60 });
+                // Total column
+                var colTotal = new DataGridViewTextBoxColumn
+                {
+                    Name = "colTotal",
+                    HeaderText = "Total",
+                    ReadOnly = true,
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+                    Width = 60,
+                    Frozen = false
+                };
+                dgvCalendar.Columns.Add(colTotal);
 
-                dgvCalendar.Rows.Clear();
-
+                // Fill rows
                 foreach (var emp in employees)
                 {
-                    var rowValues = new List<object>();
-                    rowValues.Add(emp.Name);
+                    // prepare an array for row values (1 + daysInYear + 1)
+                    object[] values = new object[1 + daysInYear + 1];
+                    values[0] = emp.Name;
 
-                    int total = 0;
-                    for (int m = 1; m <= 12; m++)
+                    // boolean array for marking vacation days
+                    var dayMarks = new bool[daysInYear];
+
+                    // get vacations for this employee overlapping year
+                    var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
+                    foreach (var v in vlist)
                     {
-                        var first = new DateTime(year, m, 1);
-                        var last = new DateTime(year, m, DateTime.DaysInMonth(year, m));
-                        int daysInMonth = 0;
-                        foreach (var v in vacations.Where(x => x.EmployeeId == emp.Id))
+                        var s = v.StartDate < firstOfYear ? firstOfYear : v.StartDate;
+                        var e = v.EndDate > firstOfYear.AddDays(daysInYear - 1) ? firstOfYear.AddDays(daysInYear - 1) : v.EndDate;
+                        if (e < s) continue;
+                        int startIndex = (s - firstOfYear).Days;
+                        int endIndex = (e - firstOfYear).Days;
+                        for (int i = startIndex; i <= endIndex && i < daysInYear; i++)
                         {
-                            var s = v.StartDate < first ? first : v.StartDate;
-                            var e = v.EndDate > last ? last : v.EndDate;
-                            if (e >= s)
-                            {
-                                daysInMonth += (e - s).Days + 1;
-                            }
+                            if (i >= 0) dayMarks[i] = true;
                         }
-                        rowValues.Add(daysInMonth > 0 ? daysInMonth.ToString() : "");
-                        total += daysInMonth;
                     }
 
-                    rowValues.Add(total > 0 ? total.ToString() : "");
-                    dgvCalendar.Rows.Add(rowValues.ToArray());
+                    int total = 0;
+                    // set day cell values as "X" (or empty)
+                    for (int d = 0; d < daysInYear; d++)
+                    {
+                        if (dayMarks[d])
+                        {
+                            values[1 + d] = "X";
+                            total++;
+                        }
+                        else
+                        {
+                            values[1 + d] = "";
+                        }
+                    }
+
+                    values[1 + daysInYear] = total > 0 ? total.ToString() : "";
+
+                    int rowIndex = dgvCalendar.Rows.Add(values);
+
+                    // set styling for vacation cells (background color)
+                    if (total > 0)
+                    {
+                        for (int d = 0; d < daysInYear; d++)
+                        {
+                            if (dayMarks[d])
+                            {
+                                var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
+                                cell.Style.BackColor = Color.LightSalmon;
+                                cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                                cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                            }
+                        }
+                    }
                 }
+
+                // Freeze the name column so it stays visible
+                if (dgvCalendar.Columns.Contains("colName"))
+                    dgvCalendar.Columns["colName"].Frozen = true;
+
+                // Improve header appearance: rotate header or keep as single numbers (we keep numbers)
+                dgvCalendar.ResumeLayout();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Fehler beim Laden des Kalenders: " + ex.Message);
+                MessageBox.Show("Fehler beim Laden des Tageskalenders: " + ex.Message);
             }
         }
 
-        // AddMenu kept as before (simple)
+        // AddMenu kept or adapted to existing logic (uses menuStrip1 from designer)
         private void AddMenu()
         {
             var menu = this.menuStrip1;

@@ -1,5 +1,4 @@
-﻿// name=VacationApp/MainForm.Designer.cs
-namespace VacationApp
+﻿namespace VacationApp
 {
     partial class MainForm
     {
@@ -22,11 +21,11 @@ namespace VacationApp
             // menuStrip1 (menu is added in MainForm.AddMenu at runtime)
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(900, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(1200, 24);
 
             // panelTop
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelTop.Height = 36;
+            this.panelTop.Height = 40;
             this.panelTop.Padding = new System.Windows.Forms.Padding(8);
             this.panelTop.Controls.Add(this.lblYear);
             this.panelTop.Controls.Add(this.nudYear);
@@ -47,21 +46,31 @@ namespace VacationApp
 
             // btnManageVacations
             this.btnManageVacations.Text = "Urlaube verwalten";
-            this.btnManageVacations.Location = new System.Drawing.Point(160, 4);
+            this.btnManageVacations.Location = new System.Drawing.Point(160, 6);
             this.btnManageVacations.Size = new System.Drawing.Size(140, 26);
             this.btnManageVacations.Name = "btnManageVacations";
 
             // dgvCalendar
             this.dgvCalendar.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvCalendar.Location = new System.Drawing.Point(0, 60);
+            this.dgvCalendar.Location = new System.Drawing.Point(0, 64);
             this.dgvCalendar.Name = "dgvCalendar";
             this.dgvCalendar.ReadOnly = true;
             this.dgvCalendar.RowHeadersVisible = false;
             this.dgvCalendar.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvCalendar.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
+
+            // Important for day view: do NOT auto-size columns; allow horizontal scroll
+            this.dgvCalendar.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.None;
+            this.dgvCalendar.AllowUserToAddRows = false;
+            this.dgvCalendar.AllowUserToDeleteRows = false;
+            this.dgvCalendar.AllowUserToOrderColumns = false;
+            this.dgvCalendar.AllowUserToResizeColumns = true;
+            this.dgvCalendar.AllowUserToResizeRows = false;
+            this.dgvCalendar.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvCalendar.HorizontalScrollingOffset = 0;
+            this.dgvCalendar.Scroll += (s, e) => { /* default handling */ };
 
             // MainForm
-            this.ClientSize = new System.Drawing.Size(900, 600);
+            this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Controls.Add(this.dgvCalendar);
             this.Controls.Add(this.panelTop);
             this.Controls.Add(this.menuStrip1);
