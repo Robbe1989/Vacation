@@ -436,6 +436,16 @@ for (int d = 0; d < daysInYear; d++)
         rectEnd.Right - rectStart.X,
         weekRowHeight);
 
+// Trennlinie am Ende der Kalenderwoche
+using var weekBorderPen = new Pen(Color.DimGray, 2);
+
+g.DrawLine(
+    weekBorderPen,
+    weekRect.Right,
+    0,
+    weekRect.Right,
+    panelMonthHeader.Height);
+
     if (weekRect.Width > 4)
     {
         g.DrawString(
