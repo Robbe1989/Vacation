@@ -251,5 +251,185 @@ namespace VacationApp
                         try
                         {
                             var r = dgvCalendar.GetColumnDisplayRectangle(c, true);
-                            if (r.Width > 0) { rectEnd*
-
+                            if (r.Width > 0) { rectEnd = r; break; }
+                        }
+                        catch { }
+                    }
+
+                    if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
+
+                    int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
+                    int xEnd = rectEnd.IsEmpty ? rectStart.Right : rectEnd.Right;
+                    if (xEnd <= xStart) continue;
+
+                    int width = xEnd - xStart;
+                    var monthRect = new Rectangle(xStart, 0, Math.Min(width, panelMonthHeader.Width - xStart), bannerHeight - 1);
+                    if (monthRect.Width <= 2) continue;
+
+                    var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
+                    using var brushBanner = new SolidBrush(fillColor);
+
+                    g.FillRectangle(brushBanner, monthRect);
+                    g.DrawRectangle(penBanner, monthRect);
+
+                    var monthName = new DateTime(year, month, 1).ToString("MMMM", CultureInfo.CurrentCulture);
+                    using var bigFont = new Font(this.Font.FontFamily, Math.Max(12f, this.Font.Size + 2f), FontStyle.Bold);
+                    g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
+                }
+
+                // KW-Zeile Hintergrund
+                using (var brushWeekBg = new SolidBrush(Color.FromArgb(245, 245, 245)))
+                using (var penWeek = new Pen(Color.LightGray))
+                {
+                    var weekAreaRect = new Rectangle(0, bannerHeight, panelMonthHeader.Width, weekRowHeight);
+                    g.FillRectangle(brushWeekBg, weekAreaRect);
+                    g.DrawLine(penWeek, 0, bannerHeight + weekRowHeight - 1, panelMonthHeader.Width, bannerHeight + weekRowHeight - 1);
+                }
+
+                // Tag-Header-Grund (unter KW-Zeile)
+                using (var brushDayBg = new SolidBrush(Color.White))
+                using (var penGrid = new Pen(Color.LightGray))
+                {
+                    var dayAreaRect = new Rectangle(0, bannerHeight + weekRowHeight, panelMonthHeader.Width, dayHeaderHeight);
+                    g.FillRectangle(brushDayBg, dayAreaRect);
+                    g.DrawLine(penGrid, 0, bannerHeight + weekRowHeight, panelMonthHeader.Width, bannerHeight + weekRowHeight);
+                }
+
+                // Tage + Wochentage + Wochenendshading
+                using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
+                using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
+                using (var penDotted = new Pen(Color.Gray))
+                using (var brushWeekend = new SolidBrush(Color.FromArgb(240, 240, 240)))
+                {
+                    penDotted.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+
+                    for (int d = 0; d < daysInYear; d++)
+                    {
+                        int colIndex = 1 + d;
+                        Rectangle rect;
+                        try { rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true); }
+                        catch { continue; }
+
+                        if (rect.Width == 0 && rect.Right <= 0) continue;
+                        if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
+
+                        int x = rect.X;
+                        int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
+                        var cellRect = new Rectangle(x, bannerHeight + weekRowHeight, w, dayHeaderHeight);
+
+                        var date = firstOfYear.AddDays(d);
+                        if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+                        {
+                            g.FillRectangle(brushWeekend, cellRect);
+                        }
+
+                        g.DrawLine(penDotted, cellRect.Left, bannerHeight + weekRowHeight, cellRect.Left, bannerHeight + weekRowHeight + dayHeaderHeight);
+
+                        var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
+                        var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
+
+                        string dayText = date.Day.ToString("00");
+                        string weekdayShort = date.ToString("ddd", CultureInfo.CurrentCulture);
+
+                        g.DrawString(dayText, smallFont, Brushes.Black, dayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                        g.DrawString(weekdayShort, weekdayFont, Brushes.DarkSlateGray, weekdayRect, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                    }
+
+                    int lastDayCol = dgvCalendar.Columns.Count - 2;
+                    if (lastDayCol >= 1)
+                    {
+                        try
+                        {
+                            var lastRect = dgvCalendar.GetColumnDisplayRectangle(lastDayCol, true);
+                            if (lastRect.Width > 0)
+                            {
+                                int xRight = lastRect.Right;
+                                g.DrawLine(penDotted, xRight, bannerHeight + weekRowHeight, xRight, bannerHeight + weekRowHeight + dayHeaderHeight);
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                // KW-Zahlen: für jede Woche (Montag..Sonntag) die KW berechnen und als Zahl in der KW-Zeile zentriert darstellen
+                var calendar = CultureInfo.InvariantCulture.Calendar; // ISO-like
+                var weekRule = CalendarWeekRule.FirstFourDayWeek;
+                var firstDayOfWeek = DayOfWeek.Monday;
+
+                using var weekTextBrush = Brushes.Black;
+                using var weekFont = new Font(this.Font.FontFamily, Math.Max(9f, this.Font.Size - 1f), FontStyle.Bold);
+
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    var date = firstOfYear.AddDays(d);
+                    if (date.DayOfWeek != DayOfWeek.Monday) continue;
+
+                    int mondayIndex = d;
+                    int sundayIndex = Math.Min(daysInYear - 1, d + 6);
+
+                    int colStart = 1 + mondayIndex;
+                    int colEnd = 1 + sundayIndex;
+
+                    Rectangle rectStart = Rectangle.Empty;
+                    Rectangle rectEnd = Rectangle.Empty;
+                    for (int c = colStart; c <= colEnd; c++)
+                    {
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectStart = r; break; } }
+                        catch { }
+                    }
+                    for (int c = colEnd; c >= colStart; c--)
+                    {
+                        try { var r = dgvCalendar.GetColumnDisplayRectangle(c, true); if (r.Width > 0) { rectEnd = r; break; } }
+                        catch { }
+                    }
+                    if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
+
+                    int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
+                    int xEnd = rectEnd.IsEmpty ? rectStart.Right : rectEnd.Right;
+                    if (xEnd <= xStart) continue;
+
+                    var weekRect = new Rectangle(xStart, bannerHeight + 2, Math.Min(xEnd - xStart, panelMonthHeader.Width - xStart), Math.Max(12, weekRowHeight - 4));
+                    if (weekRect.Width <= 4) continue;
+
+                    int kw;
+                    try { kw = calendar.GetWeekOfYear(date, weekRule, firstDayOfWeek); }
+                    catch { kw = ((date.DayOfYear + 6) / 7); }
+
+                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString(kw.ToString(), weekFont, weekTextBrush, weekRect, sf);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("PanelMonthHeader_Paint error: " + ex);
+            }
+        }
+
+        private void AddMenu()
+        {
+            var menu = this.menuStrip1;
+            menu.Items.Clear();
+
+            var menuMitarbeiter = new ToolStripMenuItem("Mitarbeiter");
+            var menuOpen = new ToolStripMenuItem("Verwalten");
+            menuOpen.Click += (s, e) =>
+            {
+                using var f = new Forms.EmployeesForm();
+                f.ShowDialog(this);
+                LoadCalendar((int)nudYear.Value);
+            };
+            menuMitarbeiter.DropDownItems.Add(menuOpen);
+            menu.Items.Add(menuMitarbeiter);
+
+            var menuOptions = new ToolStripMenuItem("Optionen");
+            var menuDepartments = new ToolStripMenuItem("Abteilungen");
+            menuDepartments.Click += (s, e) =>
+            {
+                using var f = new Forms.DepartmentsForm();
+                f.ShowDialog(this);
+            };
+            menuOptions.DropDownItems.Add(menuDepartments);
+            menu.Items.Add(menuOptions);
+        }
+    }
+}
