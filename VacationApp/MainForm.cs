@@ -233,12 +233,6 @@ namespace VacationApp
 
 dgvCalendar.ResumeLayout();
 
-dgvCalendar.ClearSelection();
-panelMonthHeader.Invalidate();
-
-System.Diagnostics.Debug.WriteLine(
-    $"[LoadCalendar] Fertig - Zeilen: {dgvCalendar.Rows.Count}"
-);
 
                 dgvCalendar.ClearSelection();
                 panelMonthHeader.Invalidate();
@@ -345,9 +339,15 @@ System.Diagnostics.Debug.WriteLine(
                     if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
 
 int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
-                    if (xEnd <= xStart) continue;
 
-                    int width = xEnd - xStart;
+xStart = Math.Max(xStart, EmployeeColumnWidth);
+
+int xEnd = rectEnd.IsEmpty ? rectStart.Right : rectEnd.Right;
+
+if (xEnd <= xStart)
+    continue;
+
+int width = xEnd - xStart;
                     var monthRect = new Rectangle(xStart, 0, Math.Min(width, panelMonthHeader.Width - xStart), bannerHeight - 1);
                     if (monthRect.Width <= 2) continue;
 
