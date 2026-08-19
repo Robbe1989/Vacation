@@ -199,9 +199,12 @@ namespace VacationApp
                     }
                     values[1 + daysInYear] = total > 0 ? total.ToString() : "";
 
-                    int rowIndex = dgvCalendar.Rows.Add(values);
-					
-					dgvCalendar.Rows[rowIndex].Height = 28;
+int rowIndex = dgvCalendar.Rows.Add(values);
+
+dgvCalendar.Rows[rowIndex].Cells[0].Value =
+    "TEST " + emp.Name;
+
+dgvCalendar.Rows[rowIndex].Height = 28;
 
 					var nameCell = dgvCalendar.Rows[rowIndex].Cells[0];
 
@@ -253,32 +256,7 @@ dgvCalendar.ResumeLayout();
             {
                 g.Clear(panelMonthHeader.BackColor);
 
-				using (var employeeBrush = new SolidBrush(Color.Gainsboro))
-				using (var employeePen = new Pen(Color.DarkGray))
-				using (var employeeFont = new Font(Font.FontFamily, 9, FontStyle.Bold))
-				{
-					Rectangle employeeRect =
-						new Rectangle(0, 0,
-							EmployeeColumnWidth,
-							panelMonthHeader.Height);
-
-					g.FillRectangle(employeeBrush, employeeRect);
-					g.DrawRectangle(employeePen, employeeRect);
-
-					g.DrawString(
-						"Mitarbeiter",
-						employeeFont,
-						Brushes.Black,
-						employeeRect,
-						new StringFormat
-						{
-							Alignment = StringAlignment.Center,
-							LineAlignment = StringAlignment.Center
-						});
-				}			
-
-
-                if (panelMonthHeader.Height < 40)
+	            if (panelMonthHeader.Height < 40)
                 {
                     using var b = new SolidBrush(Color.FromArgb(255, 250, 205));
                     g.FillRectangle(b, panelMonthHeader.ClientRectangle);
@@ -339,8 +317,6 @@ dgvCalendar.ResumeLayout();
                     if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
 
 int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
-
-xStart = Math.Max(xStart, EmployeeColumnWidth);
 
 int xEnd = rectEnd.IsEmpty ? rectStart.Right : rectEnd.Right;
 
@@ -473,7 +449,7 @@ int width = xEnd - xStart;
                     if (rectStart.Width <= 0 && rectEnd.Width <= 0)
                         continue;
 
-int startX = Math.Max(rectStart.X, EmployeeColumnWidth);
+int startX = rectStart.X;
 
 var weekRect = new Rectangle(
     startX,
