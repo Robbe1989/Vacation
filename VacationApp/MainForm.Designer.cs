@@ -65,8 +65,6 @@
             this.dgvCalendar.ReadOnly = true;
             this.dgvCalendar.RowHeadersVisible = false;
             this.dgvCalendar.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-
-            // Important for day view: do NOT auto-size columns; allow horizontal scroll
             this.dgvCalendar.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.None;
             this.dgvCalendar.AllowUserToAddRows = false;
             this.dgvCalendar.AllowUserToDeleteRows = false;
@@ -75,6 +73,7 @@
             this.dgvCalendar.AllowUserToResizeRows = false;
             this.dgvCalendar.ColumnHeadersVisible = false;
             this.dgvCalendar.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            this.dgvCalendar.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
 
             // MainForm
             this.ClientSize = new System.Drawing.Size(1200, 700);
