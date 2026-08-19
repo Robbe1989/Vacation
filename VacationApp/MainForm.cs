@@ -325,7 +325,40 @@ using (var kwPen = new Pen(Color.Gray))
                 kwHeight);
 
             g.FillRectangle(kwBrush, kwRect);
-            g.DrawRectangle(kwPen, kwRect);
+
+using var kwBorderPen = new Pen(Color.Black, 2);
+
+// obere Linie
+g.DrawLine(
+    kwPen,
+    kwRect.Left,
+    kwRect.Top,
+    kwRect.Right - 1,
+    kwRect.Top);
+
+// untere Linie
+g.DrawLine(
+    kwPen,
+    kwRect.Left,
+    kwRect.Bottom - 1,
+    kwRect.Right - 1,
+    kwRect.Bottom - 1);
+
+// linke dicke Linie
+g.DrawLine(
+    kwBorderPen,
+    kwRect.Left,
+    kwRect.Top,
+    kwRect.Left,
+    kwRect.Bottom - 1);
+
+// rechte dicke Linie
+g.DrawLine(
+    kwBorderPen,
+    kwRect.Right - 1,
+    kwRect.Top,
+    kwRect.Right - 1,
+    kwRect.Bottom - 1);
 			
 			
 /* // linke KW-Grenze
@@ -395,16 +428,6 @@ g.DrawLine(
                         try { rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true); }
                         catch { continue; }
 						
-						if (d == 0)
-{
-    g.DrawLine(
-        Pens.Red,
-        rect.Left,
-        0,
-        rect.Left,
-        panelMonthHeader.Height);
-}
-
                         if (rect.Width == 0 && rect.Right <= 0) continue;
                         if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
 
@@ -425,9 +448,10 @@ g.DrawLine(
 g.DrawLine(
     penGridLines,
     cellRect.Left - 1,
-    bannerHeight,
+    bannerHeight + kwHeight,
     cellRect.Left - 1,
     panelMonthHeader.Height);
+
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
                         var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
