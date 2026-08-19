@@ -326,7 +326,7 @@ using (var kwPen = new Pen(Color.Gray))
 
             g.FillRectangle(kwBrush, kwRect);
 
-using var kwBorderPen = new Pen(Color.Black, 2);
+using var kwBorderPen = new Pen(Color.DimGray, 1.5f);
 
 // obere Linie
 g.DrawLine(
@@ -344,21 +344,21 @@ g.DrawLine(
     kwRect.Right - 1,
     kwRect.Bottom - 1);
 
-// linke dicke Linie
+// linke dicke KW-Trennlinie
 g.DrawLine(
     kwBorderPen,
     kwRect.Left,
-    kwRect.Top,
+    0,
     kwRect.Left,
-    kwRect.Bottom - 1);
+    panelMonthHeader.Height);
 
-// rechte dicke Linie
+// rechte dicke KW-Trennlinie
 g.DrawLine(
     kwBorderPen,
     kwRect.Right - 1,
-    kwRect.Top,
+    0,
     kwRect.Right - 1,
-    kwRect.Bottom - 1);
+    panelMonthHeader.Height);
 			
 			
 /* // linke KW-Grenze
