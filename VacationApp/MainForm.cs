@@ -385,11 +385,9 @@ g.DrawLine(
                 // Tage + Wochentage + Wochenendshading
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
-                using (var penDotted = new Pen(Color.Gray))
+                using (var penGridLines = new Pen(Color.Gray))
                 using (var brushWeekend = new SolidBrush(Color.FromArgb(240, 240, 240)))
                 {
-                    penDotted.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
-
                     for (int d = 0; d < daysInYear; d++)
                     {
                         int colIndex = 1 + d;
@@ -425,7 +423,7 @@ g.DrawLine(
                         }
 
 g.DrawLine(
-    penDotted,
+    penGridLines,
     cellRect.Left - 1,
     bannerHeight,
     cellRect.Left - 1,
@@ -451,7 +449,7 @@ g.DrawLine(
                             {
                                 int xRight = lastRect.Right;
 g.DrawLine(
-    penDotted,
+    penGridLines,
     xRight - 1,
     bannerHeight,
     xRight - 1,
