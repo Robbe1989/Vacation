@@ -348,7 +348,7 @@ g.DrawLine(
 g.DrawLine(
     kwBorderPen,
     kwRect.Left,
-    0,
+    bannerHeight,
     kwRect.Left,
     panelMonthHeader.Height);
 
@@ -356,9 +356,10 @@ g.DrawLine(
 g.DrawLine(
     kwBorderPen,
     kwRect.Right - 1,
-    0,
+    bannerHeight,
     kwRect.Right - 1,
     panelMonthHeader.Height);
+
 			
 			
 /* // linke KW-Grenze
