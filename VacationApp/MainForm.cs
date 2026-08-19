@@ -165,53 +165,62 @@ namespace VacationApp
                 };
                 dgvCalendar.Columns.Add(colTotal);
 
-                // Fill rows for employees
-                foreach (var emp in employees)
+                // Fill rows for employees (auch wenn leer, wird trotzdem angezeigt)
+                if (employees.Count == 0)
                 {
-                    object[] values = new object[1 + daysInYear + 1];
-                    values[0] = emp.Name;
-
-                    var dayMarks = new bool[daysInYear];
-                    var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
-
-                    foreach (var v in vlist)
+                    // Zeige Meldung in Debug aus, aber zeichne trotzdem die Struktur
+                    System.Diagnostics.Debug.WriteLine("[LoadCalendar] Keine Mitarbeiter - zeige leeren Kalender");
+                }
+                else
+                {
+                    // Zeichne nur wenn Mitarbeiter vorhanden sind
+                    foreach (var emp in employees)
                     {
-                        var s = v.StartDate < firstOfYear ? firstOfYear : v.StartDate;
-                        var e = v.EndDate > firstOfYear.AddDays(daysInYear - 1) ? firstOfYear.AddDays(daysInYear - 1) : v.EndDate;
-                        if (e < s) continue;
-                        int startIndex = (s - firstOfYear).Days;
-                        int endIndex = (e - firstOfYear).Days;
-                        for (int i = startIndex; i <= endIndex && i < daysInYear; i++)
-                            if (i >= 0) dayMarks[i] = true;
-                    }
+                        object[] values = new object[1 + daysInYear + 1];
+                        values[0] = emp.Name;
 
-                    int total = 0;
-                    for (int d = 0; d < daysInYear; d++)
-                    {
-                        if (dayMarks[d])
+                        var dayMarks = new bool[daysInYear];
+                        var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
+
+                        foreach (var v in vlist)
                         {
-                            values[1 + d] = "●";
-                            total++;
+                            var s = v.StartDate < firstOfYear ? firstOfYear : v.StartDate;
+                            var e = v.EndDate > firstOfYear.AddDays(daysInYear - 1) ? firstOfYear.AddDays(daysInYear - 1) : v.EndDate;
+                            if (e < s) continue;
+                            int startIndex = (s - firstOfYear).Days;
+                            int endIndex = (e - firstOfYear).Days;
+                            for (int i = startIndex; i <= endIndex && i < daysInYear; i++)
+                                if (i >= 0) dayMarks[i] = true;
                         }
-                        else values[1 + d] = "";
-                    }
 
-                    values[1 + daysInYear] = total > 0 ? total.ToString() : "";
-                    int rowIndex = dgvCalendar.Rows.Add(values);
-
-                    // Color vacation cells
-                    if (total > 0)
-                    {
+                        int total = 0;
                         for (int d = 0; d < daysInYear; d++)
                         {
                             if (dayMarks[d])
                             {
-                                var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
-                                var vacColor = Color.LightSalmon;
-                                cell.Style.BackColor = vacColor;
-                                cell.Style.SelectionBackColor = vacColor;
-                                cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
-                                cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                                values[1 + d] = "●";
+                                total++;
+                            }
+                            else values[1 + d] = "";
+                        }
+
+                        values[1 + daysInYear] = total > 0 ? total.ToString() : "";
+                        int rowIndex = dgvCalendar.Rows.Add(values);
+
+                        // Color vacation cells
+                        if (total > 0)
+                        {
+                            for (int d = 0; d < daysInYear; d++)
+                            {
+                                if (dayMarks[d])
+                                {
+                                    var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
+                                    var vacColor = Color.LightSalmon;
+                                    cell.Style.BackColor = vacColor;
+                                    cell.Style.SelectionBackColor = vacColor;
+                                    cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                                    cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                                }
                             }
                         }
                     }
