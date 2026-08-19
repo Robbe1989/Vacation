@@ -104,6 +104,7 @@ namespace VacationApp
                 dgvCalendar.Rows.Clear();
 
                 var employees = Database.GetAllEmployees();
+				MessageBox.Show($"Mitarbeiter gefunden: {employees.Count}");
                 var vacations = Database.GetVacationsForYear(year);
 
                 System.Diagnostics.Debug.WriteLine($"[LoadCalendar] Mitarbeiter: {employees.Count}, Urlaube: {vacations.Count}");
@@ -219,6 +220,7 @@ namespace VacationApp
                     dgvCalendar.Columns["colName"].Frozen = true;
 
                 dgvCalendar.ResumeLayout();
+				MessageBox.Show($"Zeilen im Grid: {dgvCalendar.Rows.Count}");
 
                 dgvCalendar.ClearSelection();
                 panelMonthHeader.Invalidate();
@@ -434,6 +436,11 @@ namespace VacationApp
                         bannerHeight,
                         rectEnd.Right - rectStart.X,
                         weekRowHeight);
+					
+					if (weekRect.Right > panelMonthHeader.Width)
+					{
+						weekRect.Width = panelMonthHeader.Width - weekRect.Left;
+					}
 
                     using var weekBorderPen = new Pen(Color.DimGray, 2);
 
