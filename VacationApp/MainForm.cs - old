@@ -38,7 +38,7 @@ namespace VacationApp
             dgvCalendar.ColumnWidthChanged += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
-            panelMonthHeader.Paint += PanelMonthHeader_Paint;
+            panelMonthHeader.Paint += PanelMonthHeader_Paint!;
 
             // Ensure header visible and load calendar after initial layout
             this.Shown += async (s, e) =>
@@ -106,6 +106,8 @@ namespace VacationApp
                 var employees = Database.GetAllEmployees();
                 var vacations = Database.GetVacationsForYear(year);
 
+                System.Diagnostics.Debug.WriteLine($"[LoadCalendar] Mitarbeiter: {employees.Count}, Urlaube: {vacations.Count}");
+
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
                 var firstOfYear = new DateTime(year, 1, 1);
 
@@ -163,53 +165,62 @@ namespace VacationApp
                 };
                 dgvCalendar.Columns.Add(colTotal);
 
-                // Fill rows for employees
-                foreach (var emp in employees)
+                // Fill rows for employees (auch wenn leer, wird trotzdem angezeigt)
+                if (employees.Count == 0)
                 {
-                    object[] values = new object[1 + daysInYear + 1];
-                    values[0] = emp.Name;
-
-                    var dayMarks = new bool[daysInYear];
-                    var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
-
-                    foreach (var v in vlist)
+                    // Zeige Meldung in Debug aus, aber zeichne trotzdem die Struktur
+                    System.Diagnostics.Debug.WriteLine("[LoadCalendar] Keine Mitarbeiter - zeige leeren Kalender");
+                }
+                else
+                {
+                    // Zeichne nur wenn Mitarbeiter vorhanden sind
+                    foreach (var emp in employees)
                     {
-                        var s = v.StartDate < firstOfYear ? firstOfYear : v.StartDate;
-                        var e = v.EndDate > firstOfYear.AddDays(daysInYear - 1) ? firstOfYear.AddDays(daysInYear - 1) : v.EndDate;
-                        if (e < s) continue;
-                        int startIndex = (s - firstOfYear).Days;
-                        int endIndex = (e - firstOfYear).Days;
-                        for (int i = startIndex; i <= endIndex && i < daysInYear; i++)
-                            if (i >= 0) dayMarks[i] = true;
-                    }
+                        object[] values = new object[1 + daysInYear + 1];
+                        values[0] = emp.Name;
 
-                    int total = 0;
-                    for (int d = 0; d < daysInYear; d++)
-                    {
-                        if (dayMarks[d])
+                        var dayMarks = new bool[daysInYear];
+                        var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
+
+                        foreach (var v in vlist)
                         {
-                            values[1 + d] = "●";
-                            total++;
+                            var s = v.StartDate < firstOfYear ? firstOfYear : v.StartDate;
+                            var e = v.EndDate > firstOfYear.AddDays(daysInYear - 1) ? firstOfYear.AddDays(daysInYear - 1) : v.EndDate;
+                            if (e < s) continue;
+                            int startIndex = (s - firstOfYear).Days;
+                            int endIndex = (e - firstOfYear).Days;
+                            for (int i = startIndex; i <= endIndex && i < daysInYear; i++)
+                                if (i >= 0) dayMarks[i] = true;
                         }
-                        else values[1 + d] = "";
-                    }
 
-                    values[1 + daysInYear] = total > 0 ? total.ToString() : "";
-                    int rowIndex = dgvCalendar.Rows.Add(values);
-
-                    // Color vacation cells
-                    if (total > 0)
-                    {
+                        int total = 0;
                         for (int d = 0; d < daysInYear; d++)
                         {
                             if (dayMarks[d])
                             {
-                                var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
-                                var vacColor = Color.LightSalmon;
-                                cell.Style.BackColor = vacColor;
-                                cell.Style.SelectionBackColor = vacColor;
-                                cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
-                                cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                                values[1 + d] = "●";
+                                total++;
+                            }
+                            else values[1 + d] = "";
+                        }
+
+                        values[1 + daysInYear] = total > 0 ? total.ToString() : "";
+                        int rowIndex = dgvCalendar.Rows.Add(values);
+
+                        // Color vacation cells
+                        if (total > 0)
+                        {
+                            for (int d = 0; d < daysInYear; d++)
+                            {
+                                if (dayMarks[d])
+                                {
+                                    var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
+                                    var vacColor = Color.LightSalmon;
+                                    cell.Style.BackColor = vacColor;
+                                    cell.Style.SelectionBackColor = vacColor;
+                                    cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                                    cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                                }
                             }
                         }
                     }
@@ -222,15 +233,17 @@ namespace VacationApp
 
                 dgvCalendar.ClearSelection();
                 panelMonthHeader.Invalidate();
+                
+                System.Diagnostics.Debug.WriteLine($"[LoadCalendar] Fertig - Zeilen: {dgvCalendar.Rows.Count}");
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Fehler beim Laden des Tageskalenders: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine($"[LoadCalendar ERROR] {ex}");
             }
         }
 
-        // Draw header: months (alternating colors), KW row (numbers per week, Monday start), day headers and weekends shading
-        private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
+        private void PanelMonthHeader_Paint(object? sender, PaintEventArgs e)
         {
             var g = e.Graphics;
             try
@@ -388,78 +401,74 @@ namespace VacationApp
                 }
 
                 // KW numbers centered over Mon..Sun (Monday start)
-                // KW-Zeile komplett zeichnen
-using var weekFont = new Font(this.Font.FontFamily,
-                              Math.Max(9f, this.Font.Size - 1f),
-                              FontStyle.Bold);
+                using var weekFont = new Font(this.Font.FontFamily,
+                                              Math.Max(9f, this.Font.Size - 1f),
+                                              FontStyle.Bold);
 
-var drawnWeeks = new HashSet<string>();
+                var drawnWeeks = new HashSet<string>();
 
-for (int d = 0; d < daysInYear; d++)
-{
-    var date = firstOfYear.AddDays(d);
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    var date = firstOfYear.AddDays(d);
 
-    int kw = ISOWeek.GetWeekOfYear(date);
-    int isoYear = ISOWeek.GetYear(date);
+                    int kw = ISOWeek.GetWeekOfYear(date);
+                    int isoYear = ISOWeek.GetYear(date);
 
-    string weekKey = $"{isoYear}-{kw}";
+                    string weekKey = $"{isoYear}-{kw}";
 
-    // KW nur einmal zeichnen
-    if (!drawnWeeks.Add(weekKey))
-        continue;
+                    if (!drawnWeeks.Add(weekKey))
+                        continue;
 
-    // Alle Tage dieser KW suchen
-    var weekDays = Enumerable.Range(0, daysInYear)
-        .Where(i =>
-        {
-            var dt = firstOfYear.AddDays(i);
-            return ISOWeek.GetWeekOfYear(dt) == kw &&
-                   ISOWeek.GetYear(dt) == isoYear;
-        })
-        .ToList();
+                    var weekDays = Enumerable.Range(0, daysInYear)
+                        .Where(i =>
+                        {
+                            var dt = firstOfYear.AddDays(i);
+                            return ISOWeek.GetWeekOfYear(dt) == kw &&
+                                   ISOWeek.GetYear(dt) == isoYear;
+                        })
+                        .ToList();
 
-    if (!weekDays.Any())
-        continue;
+                    if (!weekDays.Any())
+                        continue;
 
-    int firstDay = weekDays.First();
-    int lastDay = weekDays.Last();
+                    int firstDay = weekDays.First();
+                    int lastDay = weekDays.Last();
 
-    Rectangle rectStart = dgvCalendar.GetColumnDisplayRectangle(firstDay + 1, true);
-    Rectangle rectEnd = dgvCalendar.GetColumnDisplayRectangle(lastDay + 1, true);
+                    Rectangle rectStart = dgvCalendar.GetColumnDisplayRectangle(firstDay + 1, true);
+                    Rectangle rectEnd = dgvCalendar.GetColumnDisplayRectangle(lastDay + 1, true);
 
-    if (rectStart.Width <= 0 && rectEnd.Width <= 0)
-        continue;
+                    if (rectStart.Width <= 0 && rectEnd.Width <= 0)
+                        continue;
 
-    var weekRect = new Rectangle(
-        rectStart.X,
-        bannerHeight,
-        rectEnd.Right - rectStart.X,
-        weekRowHeight);
+                    var weekRect = new Rectangle(
+                        rectStart.X,
+                        bannerHeight,
+                        rectEnd.Right - rectStart.X,
+                        weekRowHeight);
 
-// Trennlinie am Ende der Kalenderwoche
-using var weekBorderPen = new Pen(Color.DimGray, 2);
+                    using var weekBorderPen = new Pen(Color.DimGray, 2);
 
-g.DrawLine(
-    weekBorderPen,
-    weekRect.Right,
-    bannerHeight,
-    weekRect.Right,
-    bannerHeight + weekRowHeight + dayHeaderHeight);
+                    g.DrawLine(
+                        weekBorderPen,
+                        weekRect.Right,
+                        bannerHeight,
+                        weekRect.Right,
+                        bannerHeight + weekRowHeight + dayHeaderHeight);
 
-    if (weekRect.Width > 4)
-    {
-        g.DrawString(
-            kw.ToString(),
-            weekFont,
-            Brushes.Black,
-            weekRect,
-            new StringFormat
-            {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center
-            });
-    }
-}
+                    if (weekRect.Width > 4)
+                    {
+                        g.DrawString(
+                            kw.ToString(),
+                            weekFont,
+                            Brushes.Black,
+                            weekRect,
+                            new StringFormat
+                            {
+                                Alignment = StringAlignment.Center,
+                                LineAlignment = StringAlignment.Center
+                            });
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -493,5 +502,7 @@ g.DrawLine(
             menuOptions.DropDownItems.Add(menuDepartments);
             menu.Items.Add(menuOptions);
         }
+		
+		
     }
 }
