@@ -38,7 +38,7 @@ namespace VacationApp
             dgvCalendar.ColumnWidthChanged += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
-            panelMonthHeader.Paint += PanelMonthHeader_Paint;
+            panelMonthHeader.Paint += PanelMonthHeader_Paint!;
 
             // Ensure header visible and load calendar after initial layout
             this.Shown += async (s, e) =>
@@ -234,7 +234,7 @@ namespace VacationApp
             }
         }
 
-        private void PanelMonthHeader_Paint(object sender, PaintEventArgs e)
+        private void PanelMonthHeader_Paint(object? sender, PaintEventArgs e)
         {
             var g = e.Graphics;
             try

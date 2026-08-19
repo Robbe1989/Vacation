@@ -27,8 +27,8 @@ namespace VacationApp.Forms
             if (v == null)
             {
                 Vacation = new Vacation();
-                dtpStartDate.Value = DateTime.Today;
-                dtpEndDate.Value = DateTime.Today;
+                dtpStart.Value = DateTime.Today;
+                dtpEnd.Value = DateTime.Today;
             }
             else
             {
@@ -36,8 +36,8 @@ namespace VacationApp.Forms
                 var emp = Database.GetAllEmployees().Find(x => x.Id == v.EmployeeId);
                 if (emp != null && cmbEmployee.Items.Contains(emp.Name))
                     cmbEmployee.SelectedItem = emp.Name;
-                dtpStartDate.Value = v.StartDate;
-                dtpEndDate.Value = v.EndDate;
+                dtpStart.Value = v.StartDate;
+                dtpEnd.Value = v.EndDate;
                 txtComment.Text = v.Comment;
             }
         }
@@ -52,8 +52,8 @@ namespace VacationApp.Forms
             }
 
             Vacation.EmployeeId = emp.Id;
-            Vacation.StartDate = dtpStartDate.Value;
-            Vacation.EndDate = dtpEndDate.Value;
+            Vacation.StartDate = dtpStart.Value;
+            Vacation.EndDate = dtpEnd.Value;
             Vacation.Comment = txtComment.Text.Trim();
 
             DialogResult = DialogResult.OK;
