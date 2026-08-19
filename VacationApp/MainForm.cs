@@ -410,7 +410,7 @@ g.DrawLine(
                         if (rect.Width == 0 && rect.Right <= 0) continue;
                         if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
 
-                        int x = rect.X - dgvCalendar.HorizontalScrollingOffset;
+                        int x = rect.Left;
                         int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
                         var cellRect = new Rectangle(
     x,
@@ -424,11 +424,11 @@ g.DrawLine(
                             g.FillRectangle(brushWeekend, cellRect);
                         }
 
-                        g.DrawLine(
+g.DrawLine(
     penDotted,
-    cellRect.Left,
+    cellRect.Left - 1,
     bannerHeight,
-    cellRect.Left,
+    cellRect.Left - 1,
     panelMonthHeader.Height);
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
