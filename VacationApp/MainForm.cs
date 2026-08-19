@@ -396,11 +396,21 @@ g.DrawLine(
                         Rectangle rect;
                         try { rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true); }
                         catch { continue; }
+						
+						if (d == 0)
+{
+    g.DrawLine(
+        Pens.Red,
+        rect.Left,
+        0,
+        rect.Left,
+        panelMonthHeader.Height);
+}
 
                         if (rect.Width == 0 && rect.Right <= 0) continue;
                         if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
 
-                        int x = rect.X;
+                        int x = rect.X - dgvCalendar.HorizontalScrollingOffset;
                         int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
                         var cellRect = new Rectangle(
     x,
