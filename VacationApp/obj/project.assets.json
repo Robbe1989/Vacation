@@ -8,6 +8,7 @@
   "projectFileDependencyGroups": {
     "net8.0-windows": [
       "ClosedXML >= 0.104.0",
+      "Microsoft.NET.ILLink.Tasks >= 8.0.30",
       "Nager.Date >= 2.44.0",
       "System.Data.SQLite.Core >= 1.0.118"
     ]
@@ -57,6 +58,12 @@
           "ClosedXML": {
             "target": "Package",
             "version": "[0.104.0, )"
+          },
+          "Microsoft.NET.ILLink.Tasks": {
+            "suppressParent": "All",
+            "target": "Package",
+            "version": "[8.0.30, )",
+            "autoReferenced": true
           },
           "Nager.Date": {
             "target": "Package",
@@ -156,6 +163,15 @@
     {
       "code": "NU1100",
       "level": "Error",
+      "message": "\"Microsoft.NET.ILLink.Tasks (>= 8.0.30)\" kann für \"net8.0-windows\" nicht aufgelöst werden.",
+      "libraryId": "Microsoft.NET.ILLink.Tasks",
+      "targetGraphs": [
+        "net8.0-windows"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
       "message": "\"Nager.Date (>= 2.44.0)\" kann für \"net8.0-windows/win-x64\" nicht aufgelöst werden.",
       "libraryId": "Nager.Date",
       "targetGraphs": [
@@ -176,6 +192,15 @@
       "level": "Error",
       "message": "\"System.Data.SQLite.Core (>= 1.0.118)\" kann für \"net8.0-windows/win-x64\" nicht aufgelöst werden.",
       "libraryId": "System.Data.SQLite.Core",
+      "targetGraphs": [
+        "net8.0-windows/win-x64"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "\"Microsoft.NET.ILLink.Tasks (>= 8.0.30)\" kann für \"net8.0-windows/win-x64\" nicht aufgelöst werden.",
+      "libraryId": "Microsoft.NET.ILLink.Tasks",
       "targetGraphs": [
         "net8.0-windows/win-x64"
       ]

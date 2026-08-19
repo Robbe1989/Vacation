@@ -47,6 +47,12 @@
               "target": "Package",
               "version": "[0.104.0, )"
             },
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.30, )",
+              "autoReferenced": true
+            },
             "Nager.Date": {
               "target": "Package",
               "version": "[2.44.0, )"
