@@ -267,8 +267,21 @@ int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - kwHeight;
                     var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
                     using var brushBanner = new SolidBrush(fillColor);
 
-                    g.FillRectangle(brushBanner, monthRect);
-                    g.DrawRectangle(penBanner, monthRect);
+// linke KW-Grenze
+g.DrawLine(
+    Pens.Gray,
+    kwRect.Left,
+    bannerHeight,
+    kwRect.Left,
+    panelMonthHeader.Height);
+
+// rechte KW-Grenze
+g.DrawLine(
+    Pens.Gray,
+    kwRect.Right,
+    bannerHeight,
+    kwRect.Right,
+    panelMonthHeader.Height);
 
                     var monthName = new DateTime(year, month, 1).ToString("MMMM", CultureInfo.CurrentCulture);
                     using var bigFont = new Font(this.Font.FontFamily, Math.Max(12f, this.Font.Size + 2f), FontStyle.Bold);
@@ -398,7 +411,7 @@ using (var kwPen = new Pen(Color.Gray))
                         g.DrawLine(
     penDotted,
     cellRect.Left,
-    bannerHeight + kwHeight,
+    bannerHeight,
     cellRect.Left,
     panelMonthHeader.Height);
 
