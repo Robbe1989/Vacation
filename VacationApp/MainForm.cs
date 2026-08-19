@@ -190,6 +190,8 @@ namespace VacationApp
         private void PanelMonthHeader_Paint(object? sender, PaintEventArgs e)
         {
             var g = e.Graphics;
+			g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
             try
             {
                 g.Clear(panelMonthHeader.BackColor);
@@ -264,11 +266,14 @@ int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - kwHeight;
                     var monthRect = new Rectangle(xStart, 0, Math.Min(width, panelMonthHeader.Width - xStart), bannerHeight - 1);
                     if (monthRect.Width <= 2) continue;
 
-                    var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
-                    //using var brushBanner = new SolidBrush(fillColor);
+var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
+using var brushBanner = new SolidBrush(fillColor);
 
+g.FillRectangle(brushBanner, monthRect);
+g.DrawRectangle(penBanner, monthRect);
                     var monthName = new DateTime(year, month, 1).ToString("MMMM", CultureInfo.CurrentCulture);
                     using var bigFont = new Font(this.Font.FontFamily, Math.Max(12f, this.Font.Size + 2f), FontStyle.Bold);
+					
                     g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
                 }
 				// Tag-Header-Grund
@@ -323,7 +328,7 @@ using (var kwPen = new Pen(Color.Gray))
             g.DrawRectangle(kwPen, kwRect);
 			
 			
-// linke KW-Grenze
+/* // linke KW-Grenze
 g.DrawLine(
     Pens.Gray,
     kwRect.Left,
@@ -337,7 +342,7 @@ g.DrawLine(
     kwRect.Right,
     bannerHeight,
     kwRect.Right,
-    panelMonthHeader.Height);
+    panelMonthHeader.Height); */
 
             g.DrawString(
                 $"KW {currentKw}",
@@ -435,7 +440,13 @@ g.DrawLine(
                             if (lastRect.Width > 0)
                             {
                                 int xRight = lastRect.Right;
-                                g.DrawLine(penDotted, xRight, bannerHeight, xRight, bannerHeight + dayHeaderHeight);
+g.DrawLine(
+    penDotted,
+    xRight - 1,
+    bannerHeight,
+    xRight - 1,
+    panelMonthHeader.Height);
+
                             }
                         }
                         catch { }
