@@ -105,7 +105,6 @@ namespace VacationApp
                 dgvCalendar.Rows.Clear();
 
                 var employees = Database.GetAllEmployees();
-				MessageBox.Show($"Mitarbeiter gefunden: {employees.Count}");
                 var vacations = Database.GetVacationsForYear(year);
 
                 System.Diagnostics.Debug.WriteLine($"[LoadCalendar] Mitarbeiter: {employees.Count}, Urlaube: {vacations.Count}");
@@ -232,18 +231,14 @@ namespace VacationApp
                 if (dgvCalendar.Columns.Contains("colName"))
                     dgvCalendar.Columns["colName"].Frozen = true;
 
-foreach (DataGridViewRow row in dgvCalendar.Rows)
-{
-    row.Height = 35;
+dgvCalendar.ResumeLayout();
 
-    row.Cells[0].Style.BackColor = Color.Yellow;
-    row.Cells[0].Style.ForeColor =
-                dgvCalendar.ResumeLayout();
-				MessageBox.Show(
-    dgvCalendar.Rows[0].Cells[0].Value?.ToString()
+dgvCalendar.ClearSelection();
+panelMonthHeader.Invalidate();
+
+System.Diagnostics.Debug.WriteLine(
+    $"[LoadCalendar] Fertig - Zeilen: {dgvCalendar.Rows.Count}"
 );
-
-				MessageBox.Show($"Zeilen im Grid: {dgvCalendar.Rows.Count}");
 
                 dgvCalendar.ClearSelection();
                 panelMonthHeader.Invalidate();
@@ -349,10 +344,7 @@ foreach (DataGridViewRow row in dgvCalendar.Rows)
                     }
                     if (rectStart.IsEmpty && rectEnd.IsEmpty) continue;
 
-                    int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
-
-					xStart = Math.Max(xStart, 
-                    int xEnd = rectEnd.IsEmpty ? rectStart.Right : rectEnd.Right;
+int xStart = rectStart.IsEmpty ? rectEnd.X : rectStart.X;
                     if (xEnd <= xStart) continue;
 
                     int width = xEnd - xStart;
@@ -481,31 +473,32 @@ foreach (DataGridViewRow row in dgvCalendar.Rows)
                     if (rectStart.Width <= 0 && rectEnd.Width <= 0)
                         continue;
 
-int startX =
-    Math.Max(rectStart.X, EmployeeColumnWidth);
+int startX = Math.Max(rectStart.X, EmployeeColumnWidth);
 
 var weekRect = new Rectangle(
     startX,
     bannerHeight,
-    rectEnd.Right - 
-					
-					if (weekRect.Right > panelMonthHeader.Width)
-					{
-						weekRect.Width = panelMonthHeader.Width - weekRect.Left;
-					}
+    rectEnd.Right - startX,
+    weekRowHeight);
 
-                    using var weekBorderPen = new Pen(Color.DimGray, 2);
+if (weekRect.Right > panelMonthHeader.Width)
+{
+    weekRect.Width =
+        panelMonthHeader.Width - weekRect.Left;
+}
 
-int startX =
-    Math.Max(rectStart.X, EmployeeColumnWidth);
+using var weekBorderPen =
+    new Pen(Color.DimGray, 2);
 
-var weekRect = new Rectangle(
-    startX,
+g.DrawLine(
+    weekBorderPen,
+    weekRect.Right,
     bannerHeight,
-    rectEnd.Right - 
+    weekRect.Right,
+    bannerHeight + weekRowHeight + dayHeaderHeight);
 
-                    if (weekRect.Width > 4)
-                    {
+if (weekRect.Width > 4)
+{
                         g.DrawString(
                             kw.ToString(),
                             weekFont,
