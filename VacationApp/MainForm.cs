@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -407,11 +407,9 @@ namespace VacationApp
 
                     string weekKey = $"{isoYear}-{kw}";
 
-                    // KW nur einmal zeichnen
                     if (!drawnWeeks.Add(weekKey))
                         continue;
 
-                    // Alle Tage dieser KW suchen
                     var weekDays = Enumerable.Range(0, daysInYear)
                         .Where(i =>
                         {
@@ -439,7 +437,6 @@ namespace VacationApp
                         rectEnd.Right - rectStart.X,
                         weekRowHeight);
 
-                    // Trennlinie am Ende der Kalenderwoche
                     using var weekBorderPen = new Pen(Color.DimGray, 2);
 
                     g.DrawLine(
