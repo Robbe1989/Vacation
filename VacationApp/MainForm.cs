@@ -502,5 +502,160 @@ namespace VacationApp
             menuOptions.DropDownItems.Add(menuDepartments);
             menu.Items.Add(menuOptions);
         }
+		
+		private void LoadCalendar(int year)
+{
+    try
+    {
+        dgvCalendar.SuspendLayout();
+        dgvCalendar.Columns.Clear();
+        dgvCalendar.Rows.Clear();
+
+        var employees = Database.GetAllEmployees();
+        var vacations = Database.GetVacationsForYear(year);
+
+        // WICHTIG: Debug-Ausgabe
+        System.Diagnostics.Debug.WriteLine($"===== LoadCalendar START =====");
+        System.Diagnostics.Debug.WriteLine($"Mitarbeiter in DB: {employees.Count}");
+        foreach (var emp in employees)
+        {
+            System.Diagnostics.Debug.WriteLine($"  - {emp.Id}: {emp.Name}");
+        }
+        System.Diagnostics.Debug.WriteLine($"Urlaube: {vacations.Count}");
+
+        int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
+        var firstOfYear = new DateTime(year, 1, 1);
+
+        // Name column (frozen)
+        var colName = new DataGridViewTextBoxColumn
+        {
+            Name = "colName",
+            HeaderText = "Mitarbeiter",
+            ReadOnly = true,
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+            Width = 200,
+            Frozen = true
+        };
+        dgvCalendar.Columns.Add(colName);
+
+        // Day columns
+        for (int d = 0; d < daysInYear; d++)
+        {
+            var date = firstOfYear.AddDays(d);
+            var col = new DataGridViewTextBoxColumn
+            {
+                Name = $"d{d + 1}",
+                HeaderText = date.Day.ToString(),
+                ReadOnly = true,
+                Width = 28,
+                ToolTipText = date.ToString("dd.MM.yyyy")
+            };
+
+            if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+            {
+                col.DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(240, 240, 240),
+                    SelectionBackColor = Color.FromArgb(240, 240, 240),
+                    SelectionForeColor = Color.Black
+                };
+            }
+            else
+            {
+                col.DefaultCellStyle.SelectionBackColor = Color.White;
+                col.DefaultCellStyle.SelectionForeColor = Color.Black;
+            }
+
+            dgvCalendar.Columns.Add(col);
+        }
+
+        // Total column
+        var colTotal = new DataGridViewTextBoxColumn
+        {
+            Name = "colTotal",
+            HeaderText = "Total",
+            ReadOnly = true,
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+            Width = 60
+        };
+        dgvCalendar.Columns.Add(colTotal);
+
+        // Fill rows for employees
+        if (employees.Count > 0)
+        {
+            foreach (var emp in employees)
+            {
+                System.Diagnostics.Debug.WriteLine($"Füge Zeile hinzu für: {emp.Name}");
+                
+                object[] values = new object[1 + daysInYear + 1];
+                values[0] = emp.Name;
+
+                var dayMarks = new bool[daysInYear];
+                var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
+
+                foreach (var v in vlist)
+                {
+                    var s = v.StartDate < firstOfYear ? firstOfYear : v.StartDate;
+                    var e = v.EndDate > firstOfYear.AddDays(daysInYear - 1) ? firstOfYear.AddDays(daysInYear - 1) : v.EndDate;
+                    if (e < s) continue;
+                    int startIndex = (s - firstOfYear).Days;
+                    int endIndex = (e - firstOfYear).Days;
+                    for (int i = startIndex; i <= endIndex && i < daysInYear; i++)
+                        if (i >= 0) dayMarks[i] = true;
+                }
+
+                int total = 0;
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    if (dayMarks[d])
+                    {
+                        values[1 + d] = "●";
+                        total++;
+                    }
+                    else values[1 + d] = "";
+                }
+
+                values[1 + daysInYear] = total > 0 ? total.ToString() : "";
+                int rowIndex = dgvCalendar.Rows.Add(values);
+
+                // Color vacation cells
+                if (total > 0)
+                {
+                    for (int d = 0; d < daysInYear; d++)
+                    {
+                        if (dayMarks[d])
+                        {
+                            var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
+                            var vacColor = Color.LightSalmon;
+                            cell.Style.BackColor = vacColor;
+                            cell.Style.SelectionBackColor = vacColor;
+                            cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                            cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine("[LoadCalendar] KEINE MITARBEITER - leerer Kalender");
+        }
+
+        if (dgvCalendar.Columns.Contains("colName"))
+            dgvCalendar.Columns["colName"].Frozen = true;
+
+        dgvCalendar.ResumeLayout();
+        dgvCalendar.ClearSelection();
+        panelMonthHeader.Invalidate();
+        
+        System.Diagnostics.Debug.WriteLine($"Zeilen erstellt: {dgvCalendar.Rows.Count}");
+        System.Diagnostics.Debug.WriteLine($"===== LoadCalendar END =====");
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Fehler beim Laden des Tageskalenders: " + ex.Message);
+        System.Diagnostics.Debug.WriteLine($"[LoadCalendar ERROR] {ex}");
+    }
+}
     }
 }
