@@ -1,6 +1,4 @@
-// name=VacationApp/Forms/VacationEditForm.cs
 using System;
-using System.Linq;
 using System.Windows.Forms;
 using VacationApp.Data;
 using VacationApp.Models;
@@ -10,72 +8,62 @@ namespace VacationApp.Forms
     public partial class VacationEditForm : Form
     {
         public Vacation Vacation { get; private set; }
-        private readonly int _year;
 
-        public VacationEditForm(Vacation v = null, int year = 0)
+        public VacationEditForm(Vacation? v = null)
         {
             InitializeComponent();
-            _year = year == 0 ? DateTime.Now.Year : year;
 
-            // load employees into combo
-            var employees = Database.GetAllEmployees();
+            Database.Init();
+
+            // Load employees
+            var emps = Database.GetAllEmployees();
             cmbEmployee.Items.Clear();
-            foreach (var e in employees)
-                cmbEmployee.Items.Add(new ComboboxItem { Text = e.Name, Value = e.Id });
+            foreach (var e in emps)
+                cmbEmployee.Items.Add(e.Name);
+
+            if (cmbEmployee.Items.Count > 0)
+                cmbEmployee.SelectedIndex = 0;
 
             if (v == null)
             {
-                Vacation = new Vacation { StartDate = new DateTime(_year, 1, 1), EndDate = new DateTime(_year, 1, 1) };
-                if (cmbEmployee.Items.Count > 0) cmbEmployee.SelectedIndex = 0;
+                Vacation = new Vacation();
+                dtpStartDate.Value = DateTime.Today;
+                dtpEndDate.Value = DateTime.Today;
             }
             else
             {
                 Vacation = v;
-                var item = cmbEmployee.Items.OfType<ComboboxItem>().FirstOrDefault(x => (int)x.Value == v.EmployeeId);
-                if (item != null) cmbEmployee.SelectedItem = item;
-                dtpStart.Value = Vacation.StartDate;
-                dtpEnd.Value = Vacation.EndDate;
-                txtComment.Text = Vacation.Comment;
+                var emp = Database.GetAllEmployees().Find(x => x.Id == v.EmployeeId);
+                if (emp != null && cmbEmployee.Items.Contains(emp.Name))
+                    cmbEmployee.SelectedItem = emp.Name;
+                dtpStartDate.Value = v.StartDate;
+                dtpEndDate.Value = v.EndDate;
+                txtComment.Text = v.Comment;
             }
         }
 
         private void btnOk_Click(object sender, EventArgs e)
         {
-            if (!(cmbEmployee.SelectedItem is ComboboxItem ci))
+            var emp = Database.GetAllEmployees().Find(x => x.Name == cmbEmployee.SelectedItem?.ToString());
+            if (emp == null)
             {
-                MessageBox.Show("Bitte einen Mitarbeiter wählen.");
+                MessageBox.Show("Mitarbeiter auswählen!");
                 return;
             }
 
-            var s = dtpStart.Value.Date;
-            var en = dtpEnd.Value.Date;
-            if (en < s)
-            {
-                MessageBox.Show("Ende darf nicht vor dem Start liegen.");
-                return;
-            }
+            Vacation.EmployeeId = emp.Id;
+            Vacation.StartDate = dtpStartDate.Value;
+            Vacation.EndDate = dtpEndDate.Value;
+            Vacation.Comment = txtComment.Text.Trim();
 
-            Vacation.EmployeeId = (int)ci.Value;
-            Vacation.StartDate = s;
-            Vacation.EndDate = en;
-            Vacation.Comment = txtComment.Text ?? "";
-
-            this.DialogResult = DialogResult.OK;
+            DialogResult = DialogResult.OK;
             Close();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
+            DialogResult = DialogResult.Cancel;
             Close();
-        }
-
-        // small helper for combo items
-        private class ComboboxItem
-        {
-            public string Text { get; set; }
-            public object Value { get; set; }
-            public override string ToString() => Text;
         }
     }
 }
