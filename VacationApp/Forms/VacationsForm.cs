@@ -1,4 +1,3 @@
-// name=VacationApp/Forms/VacationsForm.cs
 using System;
 using System.Linq;
 using System.Windows.Forms;
@@ -31,7 +30,7 @@ namespace VacationApp.Forms
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            using var dlg = new VacationEditForm(null, _year);
+            using var dlg = new VacationEditForm();
             if (dlg.ShowDialog() == DialogResult.OK)
             {
                 Database.AddVacation(dlg.Vacation);
@@ -39,13 +38,12 @@ namespace VacationApp.Forms
             }
         }
 
-        private Vacation GetSelectedVacation()
+        private Vacation? GetSelectedVacation()
         {
             if (dgvVacations.SelectedRows.Count == 0) return null;
             var row = dgvVacations.SelectedRows[0];
             if (row.Cells["colVacId"].Value == null) return null;
             int id = Convert.ToInt32(row.Cells["colVacId"].Value);
-            // We need to fetch full vacation object (start/end/comment)
             var list = Database.GetVacationsForYear(_year);
             return list.FirstOrDefault(x => x.Id == id);
         }
@@ -54,7 +52,7 @@ namespace VacationApp.Forms
         {
             var sel = GetSelectedVacation();
             if (sel == null) return;
-            using var dlg = new VacationEditForm(sel, _year);
+            using var dlg = new VacationEditForm(sel);
             if (dlg.ShowDialog() == DialogResult.OK)
             {
                 Database.UpdateVacation(dlg.Vacation);
