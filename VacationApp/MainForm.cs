@@ -232,7 +232,17 @@ namespace VacationApp
                 if (dgvCalendar.Columns.Contains("colName"))
                     dgvCalendar.Columns["colName"].Frozen = true;
 
+foreach (DataGridViewRow row in dgvCalendar.Rows)
+{
+    row.Height = 35;
+
+    row.Cells[0].Style.BackColor = Color.Yellow;
+    row.Cells[0].Style.ForeColor =
                 dgvCalendar.ResumeLayout();
+				MessageBox.Show(
+    dgvCalendar.Rows[0].Cells[0].Value?.ToString()
+);
+
 				MessageBox.Show($"Zeilen im Grid: {dgvCalendar.Rows.Count}");
 
                 dgvCalendar.ClearSelection();
