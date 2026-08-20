@@ -37,6 +37,7 @@ namespace VacationApp
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
+			dgvCalendar.CellPainting += DgvCalendar_CellPainting;
 
             // Erstes Laden erst nach dem Anzeigen, damit das DGV Layout/Spaltenrechtecke hat
             this.Shown += (s, e) =>
@@ -491,6 +492,42 @@ g.DrawLine(
                 System.Diagnostics.Debug.WriteLine("PanelMonthHeader_Paint error: " + ex);
             }
         }
+
+private void DgvCalendar_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
+{
+    if (e.RowIndex < 0)
+        return;
+
+    // Nur Tagesspalten
+    if (e.ColumnIndex < 1 || e.ColumnIndex >= dgvCalendar.Columns.Count - 1)
+        return;
+
+    int year = (int)nudYear.Value;
+    DateTime firstOfYear = new DateTime(year, 1, 1);
+
+    int dayIndex = e.ColumnIndex - 1;
+    DateTime currentDate = firstOfYear.AddDays(dayIndex);
+
+    bool isKwStart =
+        dayIndex == 0 ||
+        currentDate.DayOfWeek == DayOfWeek.Monday;
+
+    if (!isKwStart)
+        return;
+
+    e.Paint(e.CellBounds, DataGridViewPaintParts.All);
+
+    using var kwPen = new Pen(Color.Black, 2f);
+
+    e.Graphics.DrawLine(
+        kwPen,
+        e.CellBounds.Left,
+        e.CellBounds.Top,
+        e.CellBounds.Left,
+        e.CellBounds.Bottom);
+
+    e.Handled = true;
+}
 
         private void AddMenu()
         {
