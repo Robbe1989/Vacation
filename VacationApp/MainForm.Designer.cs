@@ -57,7 +57,9 @@
             this.btnManageVacations.Name = "btnManageVacations";
             this.btnManageVacations.BackColor = System.Drawing.Color.FromArgb(253, 253, 253);
             this.btnManageVacations.ForeColor = System.Drawing.Color.Black;
-            this.btnManageVacations.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
+            this.btnManageVacations.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnManageVacations.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(200, 200, 200);
+            this.btnManageVacations.FlatAppearance.BorderSize = 1;
 
             // monthButtonPanel
             this.monthButtonPanel.Dock = System.Windows.Forms.DockStyle.Top;
@@ -80,7 +82,9 @@
                 this.monthButtons[i].Height = 30;
                 this.monthButtons[i].BackColor = System.Drawing.Color.FromArgb(253, 253, 253);
                 this.monthButtons[i].ForeColor = System.Drawing.Color.Black;
-                this.monthButtons[i].FlatStyle = System.Windows.Forms.FlatStyle.Standard;
+                this.monthButtons[i].FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+                this.monthButtons[i].FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(200, 200, 200);
+                this.monthButtons[i].FlatAppearance.BorderSize = 1;
                 this.monthButtons[i].Margin = new System.Windows.Forms.Padding(2);
                 this.monthButtons[i].Name = "btn" + monthNames[i];
                 this.monthButtons[i].Tag = i + 1;
