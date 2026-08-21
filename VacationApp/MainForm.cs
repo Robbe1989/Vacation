@@ -67,63 +67,7 @@ namespace VacationApp
             };
         }
 
-        private async Task LoadHolidays(int year)
-        {
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    client.Timeout = TimeSpan.FromSeconds(5); // Timeout nach 5 Sekunden
-                    // URL mit dynamischem Jahr
-                    var url = $"https://www.ferien-api.maxleistner.de/api/v2/{year}?states=BW";
-                    var response = await client.GetAsync(url);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var json = await response.Content.ReadAsStringAsync();
-                        System.Diagnostics.Debug.WriteLine($"API Response: {json}");
-                        
-                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
-                        Holidays.Clear();
-
-                        // Die API gibt die Daten unter "BW" zurück
-                        if (holidaysData != null && holidaysData.ContainsKey("BW"))
-                        {
-                            var bwData = holidaysData["BW"];
-                            if (bwData.ValueKind == JsonValueKind.Array)
-                            {
-                                foreach (var holiday in bwData.EnumerateArray())
-                                {
-                                    if (holiday.TryGetProperty("start", out var startProp) &&
-                                        holiday.TryGetProperty("end", out var endProp))
-                                    {
-                                        var startStr = startProp.GetString();
-                                        var endStr = endProp.GetString();
-                                        
-                                        if (DateTime.TryParseExact(startStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
-                                            DateTime.TryParseExact(endStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
-                                        {
-                                            Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
-                                            System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        System.Diagnostics.Debug.WriteLine($"Gesamte Ferien geladen: {Holidays.Count}");
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine($"API Error: {response.StatusCode}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Ferien: {ex.Message}");
-                // Fehler wird ignoriert, Ferien-Reihe wird trotzdem angezeigt, nur leer
-            }
-        }
-
+       
         private void ScrollToMonth(int month)
         {
             try
@@ -799,11 +743,5 @@ namespace VacationApp
 
             menu.Items.Add(menuOptions);
         }
-    }
-
-    public class HolidayRange
-    {
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
     }
 }
