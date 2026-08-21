@@ -37,7 +37,7 @@ namespace VacationApp
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
-			dgvCalendar.CellPainting += DgvCalendar_CellPainting;
+			dgvCalendar.RowPostPaint += DgvCalendar_RowPostPaint;
 
             // Erstes Laden erst nach dem Anzeigen, damit das DGV Layout/Spaltenrechtecke hat
             this.Shown += (s, e) =>
@@ -539,6 +539,52 @@ private void DgvCalendar_RowPostPaint(
             rect.Top,
             rect.Left,
             rect.Bottom);
+    }
+}
+
+private void DgvCalendar_Paint(object? sender, PaintEventArgs e)
+{
+    int year = (int)nudYear.Value;
+    DateTime firstOfYear = new DateTime(year, 1, 1);
+    int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
+
+    using var kwPen = new Pen(Color.Black, 2f);
+
+    for (int d = 0; d < daysInYear; d++)
+    {
+        DateTime date = firstOfYear.AddDays(d);
+
+        bool isKwStart =
+            d == 0 ||
+            date.DayOfWeek == DayOfWeek.Monday;
+
+        if (!isKwStart)
+            continue;
+
+        int colIndex = d + 1;
+
+        Rectangle rect;
+
+        try
+        {
+            rect = dgvCalendar.GetColumnDisplayRectangle(
+                colIndex,
+                true);
+        }
+        catch
+        {
+            continue;
+        }
+
+        if (rect.Width <= 0)
+            continue;
+
+        e.Graphics.DrawLine(
+            kwPen,
+            rect.Left,
+            0,
+            rect.Left,
+            dgvCalendar.DisplayRectangle.Height);
     }
 }
 
