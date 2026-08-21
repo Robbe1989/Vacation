@@ -58,30 +58,6 @@ namespace VacationApp
             };
         }
 
-        private void ScrollToMonth(int month)
-        {
-            try
-            {
-                int year = (int)nudYear.Value;
-                var firstOfYear = new DateTime(year, 1, 1);
-                var monthDate = new DateTime(year, month, 1);
-                
-                // Berechne den Spaltenindex für den ersten Tag des Monats
-                int dayIndex = (int)(monthDate - firstOfYear).TotalDays;
-                int columnIndex = dayIndex + 1; // +1 wegen der Mitarbeiter-Spalte
-
-                // Scrolle zur entsprechenden Spalte
-                if (columnIndex >= 0 && columnIndex < dgvCalendar.Columns.Count)
-                {
-                    dgvCalendar.FirstDisplayedScrollingColumnIndex = columnIndex;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Fehler beim Scrollen zum Monat: " + ex.Message);
-            }
-        }
-
         private void LoadCalendar(int year)
         {
             try
