@@ -90,13 +90,12 @@ namespace VacationApp
                         var json = await response.Content.ReadAsStringAsync();
                         System.Diagnostics.Debug.WriteLine($"API Response: {json}");
                         
-                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
-                        Holidays.Clear();
-
-                        if (holidaysData != null && holidaysData.ContainsKey("BW"))
+                        try
                         {
-                            var bwData = holidaysData["BW"];
-                            if (bwData.ValueKind == JsonValueKind.Array)
+                            var holidaysData = JsonDocument.Parse(json).RootElement;
+                            Holidays.Clear();
+
+                            if (holidaysData.TryGetProperty("BW", out var bwData) && bwData.ValueKind == JsonValueKind.Array)
                             {
                                 foreach (var holiday in bwData.EnumerateArray())
                                 {
@@ -116,9 +115,14 @@ namespace VacationApp
                                     }
                                 }
                             }
+                            System.Diagnostics.Debug.WriteLine($"Gesamte Ferien geladen: {Holidays.Count}");
+                            MessageBox.Show($"Ferien erfolgreich geladen! {Holidays.Count} Ferienzeiträume gefunden.");
                         }
-                        System.Diagnostics.Debug.WriteLine($"Gesamte Ferien geladen: {Holidays.Count}");
-                        MessageBox.Show($"Ferien erfolgreich geladen! {Holidays.Count} Ferienzeiträume gefunden.");
+                        catch (JsonException jsonEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"JSON Parse Error: {jsonEx.Message}");
+                            MessageBox.Show($"Fehler beim Verarbeiten der JSON-Daten: {jsonEx.Message}");
+                        }
                     }
                     else
                     {
