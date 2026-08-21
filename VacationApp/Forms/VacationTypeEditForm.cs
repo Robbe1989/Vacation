@@ -44,11 +44,23 @@ namespace VacationApp.Forms
                 {
                     isUpdatingControls = true;
                     panelColor.BackColor = dlg.Color;
-                    VacationType.ColorHex = ColorTranslator.ToHtml(dlg.Color);
-                    txtColorHex.Text = VacationType.ColorHex;
+                    
+                    // Konvertiere Color zu HEX - immer im Format #RRGGBB
+                    string hexColor = ConvertColorToHex(dlg.Color);
+                    
+                    VacationType.ColorHex = hexColor;
+                    txtColorHex.Text = hexColor;
                     isUpdatingControls = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Konvertiert ein Color-Objekt in einen HEX-String im Format #RRGGBB
+        /// </summary>
+        private string ConvertColorToHex(Color color)
+        {
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
         }
 
         private void txtColorHex_TextChanged(object sender, EventArgs e)
