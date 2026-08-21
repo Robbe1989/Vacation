@@ -17,7 +17,7 @@
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
-            this.btnRefresh = new System.Windows.Forms.Button();
+            this.btnClose = new System.Windows.Forms.Button();
 
             ((System.ComponentModel.ISupportInitialize)(this.dgvEmployees)).BeginInit();
             this.panelButtons.SuspendLayout();
@@ -54,15 +54,15 @@
             this.panelButtons.BackColor = System.Drawing.SystemColors.Control;
 
             // Buttons (anchored left inside the panel)
-            this.btnAdd.Text = "Hinzufügen"; this.btnAdd.Size = new System.Drawing.Size(90, 28); this.btnAdd.Location = new System.Drawing.Point(8, 8); this.btnAdd.Name = "btnAdd"; this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
-            this.btnEdit.Text = "Bearbeiten"; this.btnEdit.Size = new System.Drawing.Size(90, 28); this.btnEdit.Location = new System.Drawing.Point(106, 8); this.btnEdit.Name = "btnEdit"; this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
-            this.btnDelete.Text = "Löschen"; this.btnDelete.Size = new System.Drawing.Size(90, 28); this.btnDelete.Location = new System.Drawing.Point(204, 8); this.btnDelete.Name = "btnDelete"; this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
-            this.btnRefresh.Text = "Aktualisieren"; this.btnRefresh.Size = new System.Drawing.Size(100, 28); this.btnRefresh.Location = new System.Drawing.Point(302, 8); this.btnRefresh.Name = "btnRefresh"; this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
+            this.btnAdd.Text = "Hinzufügen"; this.btnAdd.Size = new System.Drawing.Size(90, 28); this.btnAdd.Location = new System.Drawing.Point(8, 8); this.btnAdd.Name = "btnAdd"; this.btnAdd.Click += this.btnAdd_Click;
+            this.btnEdit.Text = "Bearbeiten"; this.btnEdit.Size = new System.Drawing.Size(90, 28); this.btnEdit.Location = new System.Drawing.Point(106, 8); this.btnEdit.Name = "btnEdit"; this.btnEdit.Click += this.btnEdit_Click;
+            this.btnDelete.Text = "Löschen"; this.btnDelete.Size = new System.Drawing.Size(90, 28); this.btnDelete.Location = new System.Drawing.Point(204, 8); this.btnDelete.Name = "btnDelete"; this.btnDelete.Click += this.btnDelete_Click;
+            this.btnClose.Text = "Schließen"; this.btnClose.Size = new System.Drawing.Size(90, 28); this.btnClose.Location = new System.Drawing.Point(302, 8); this.btnClose.Name = "btnClose"; this.btnClose.Click += this.btnClose_Click;
 
             this.panelButtons.Controls.Add(this.btnAdd);
             this.panelButtons.Controls.Add(this.btnEdit);
             this.panelButtons.Controls.Add(this.btnDelete);
-            this.panelButtons.Controls.Add(this.btnRefresh);
+            this.panelButtons.Controls.Add(this.btnClose);
 
             // Form - Controls.Add order: dgv fills client area, panelButtons docked bottom
             this.ClientSize = new System.Drawing.Size(784, 445);
@@ -84,6 +84,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colVacationDays;
 
         private System.Windows.Forms.Panel panelButtons;
-        private System.Windows.Forms.Button btnAdd, btnEdit, btnDelete, btnRefresh;
+        private System.Windows.Forms.Button btnAdd, btnEdit, btnDelete, btnClose;
     }
 }

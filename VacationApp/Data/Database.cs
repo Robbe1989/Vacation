@@ -1,5 +1,4 @@
-﻿// name=VacationApp/Data/Database.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Globalization;
@@ -45,14 +44,23 @@ namespace VacationApp.Data
                     Name TEXT NOT NULL
                 );";
 
+            var createVacationTypes = @"
+                CREATE TABLE IF NOT EXISTS VacationTypes (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Abbreviation TEXT NOT NULL UNIQUE,
+                    Name TEXT NOT NULL
+                );";
+
             var createVacations = @"
                 CREATE TABLE IF NOT EXISTS Vacations (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
                     EmployeeId INTEGER NOT NULL,
                     StartDate TEXT NOT NULL,
                     EndDate TEXT NOT NULL,
+                    VacationTypeId INTEGER,
                     Comment TEXT,
-                    FOREIGN KEY(EmployeeId) REFERENCES Employees(Id)
+                    FOREIGN KEY(EmployeeId) REFERENCES Employees(Id),
+                    FOREIGN KEY(VacationTypeId) REFERENCES VacationTypes(Id)
                 );";
 
             using (var cmd = conn.CreateCommand())
@@ -63,9 +71,15 @@ namespace VacationApp.Data
                 cmd.CommandText = createDepartments;
                 cmd.ExecuteNonQuery();
 
+                cmd.CommandText = createVacationTypes;
+                cmd.ExecuteNonQuery();
+
                 cmd.CommandText = createVacations;
                 cmd.ExecuteNonQuery();
             }
+
+            // Stelle sicher, dass Standardurlaubstypen existieren
+            EnsureDefaultVacationTypes(conn);
 
             // Ensure VacationDays column exists (legacy migrations)
             using (var checkCmd = conn.CreateCommand())
@@ -91,6 +105,44 @@ namespace VacationApp.Data
                     alter.ExecuteNonQuery();
                 }
             }
+
+            // Migriere alte Vakationen falls nötig (VacationTypeId hinzufügen)
+            using (var checkCmd = conn.CreateCommand())
+            {
+                checkCmd.CommandText = "PRAGMA table_info(Vacations);";
+                using var reader = checkCmd.ExecuteReader();
+                bool hasVacationTypeId = false;
+                while (reader.Read())
+                {
+                    var colName = reader["name"]?.ToString() ?? "";
+                    if (string.Equals(colName, "VacationTypeId", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasVacationTypeId = true;
+                        break;
+                    }
+                }
+                reader.Close();
+
+                if (!hasVacationTypeId)
+                {
+                    using var alter = conn.CreateCommand();
+                    alter.CommandText = "ALTER TABLE Vacations ADD COLUMN VacationTypeId INTEGER DEFAULT 1;";
+                    alter.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private static void EnsureDefaultVacationTypes(SQLiteConnection conn)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT OR IGNORE INTO VacationTypes (Id, Abbreviation, Name) 
+                VALUES 
+                    (1, 'U', 'Urlaub'),
+                    (2, 'K', 'Krankheit'),
+                    (3, 'A', 'Abwesenheit')
+            ";
+            cmd.ExecuteNonQuery();
         }
 
         // Employees CRUD
@@ -214,6 +266,61 @@ namespace VacationApp.Data
             cmd.ExecuteNonQuery();
         }
 
+        // Vacation Types CRUD
+        public static List<VacationType> GetAllVacationTypes()
+        {
+            var list = new List<VacationType>();
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, Abbreviation, Name FROM VacationTypes ORDER BY Name;";
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                list.Add(new VacationType
+                {
+                    Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
+                    Abbreviation = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
+                    Name = rdr.IsDBNull(2) ? "" : rdr.GetString(2)
+                });
+            }
+            return list;
+        }
+
+        public static int AddVacationType(VacationType vt)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "INSERT INTO VacationTypes (Abbreviation, Name) VALUES (@abbr, @name); SELECT last_insert_rowid();";
+            cmd.Parameters.AddWithValue("@abbr", vt.Abbreviation ?? "");
+            cmd.Parameters.AddWithValue("@name", vt.Name ?? "");
+            var id = Convert.ToInt32(cmd.ExecuteScalar());
+            return id;
+        }
+
+        public static void UpdateVacationType(VacationType vt)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE VacationTypes SET Abbreviation=@abbr, Name=@name WHERE Id=@id;";
+            cmd.Parameters.AddWithValue("@abbr", vt.Abbreviation ?? "");
+            cmd.Parameters.AddWithValue("@name", vt.Name ?? "");
+            cmd.Parameters.AddWithValue("@id", vt.Id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public static void DeleteVacationType(int id)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM VacationTypes WHERE Id = @id;";
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
         // Vacations CRUD
         public static List<Vacation> GetVacationsForYear(int year)
         {
@@ -223,7 +330,7 @@ namespace VacationApp.Data
             using var conn = GetConnection();
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"SELECT Id, EmployeeId, StartDate, EndDate, Comment
+            cmd.CommandText = @"SELECT Id, EmployeeId, StartDate, EndDate, VacationTypeId, Comment
                                 FROM Vacations
                                 WHERE date(StartDate) <= @last AND date(EndDate) >= @first
                                 ORDER BY date(StartDate);";
@@ -238,7 +345,8 @@ namespace VacationApp.Data
                     EmployeeId = rdr.IsDBNull(1) ? 0 : Convert.ToInt32(rdr[1]),
                     StartDate = rdr.IsDBNull(2) ? DateTime.Today : DateTime.Parse(rdr.GetString(2)),
                     EndDate = rdr.IsDBNull(3) ? DateTime.Today : DateTime.Parse(rdr.GetString(3)),
-                    Comment = rdr.IsDBNull(4) ? "" : rdr.GetString(4)
+                    VacationTypeId = rdr.IsDBNull(4) ? 1 : Convert.ToInt32(rdr[4]),
+                    Comment = rdr.IsDBNull(5) ? "" : rdr.GetString(5)
                 };
                 list.Add(v);
             }
@@ -253,7 +361,7 @@ namespace VacationApp.Data
             using var conn = GetConnection();
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"SELECT Id, EmployeeId, StartDate, EndDate, Comment
+            cmd.CommandText = @"SELECT Id, EmployeeId, StartDate, EndDate, VacationTypeId, Comment
                                 FROM Vacations
                                 WHERE EmployeeId = @eid
                                   AND date(StartDate) <= @last
@@ -271,7 +379,8 @@ namespace VacationApp.Data
                     EmployeeId = rdr.IsDBNull(1) ? 0 : Convert.ToInt32(rdr[1]),
                     StartDate = rdr.IsDBNull(2) ? DateTime.Today : DateTime.Parse(rdr.GetString(2)),
                     EndDate = rdr.IsDBNull(3) ? DateTime.Today : DateTime.Parse(rdr.GetString(3)),
-                    Comment = rdr.IsDBNull(4) ? "" : rdr.GetString(4)
+                    VacationTypeId = rdr.IsDBNull(4) ? 1 : Convert.ToInt32(rdr[4]),
+                    Comment = rdr.IsDBNull(5) ? "" : rdr.GetString(5)
                 };
                 list.Add(v);
             }
@@ -283,12 +392,13 @@ namespace VacationApp.Data
             using var conn = GetConnection();
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"INSERT INTO Vacations (EmployeeId, StartDate, EndDate, Comment)
-                                VALUES (@eid,@start,@end,@comment);
+            cmd.CommandText = @"INSERT INTO Vacations (EmployeeId, StartDate, EndDate, VacationTypeId, Comment)
+                                VALUES (@eid,@start,@end,@vtid,@comment);
                                 SELECT last_insert_rowid();";
             cmd.Parameters.AddWithValue("@eid", v.EmployeeId);
             cmd.Parameters.AddWithValue("@start", v.StartDate.ToString("yyyy-MM-dd"));
             cmd.Parameters.AddWithValue("@end", v.EndDate.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@vtid", v.VacationTypeId);
             cmd.Parameters.AddWithValue("@comment", v.Comment ?? "");
             var id = Convert.ToInt32(cmd.ExecuteScalar());
             return id;
@@ -300,11 +410,12 @@ namespace VacationApp.Data
             conn.Open();
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"UPDATE Vacations
-                                SET EmployeeId=@eid, StartDate=@start, EndDate=@end, Comment=@comment
+                                SET EmployeeId=@eid, StartDate=@start, EndDate=@end, VacationTypeId=@vtid, Comment=@comment
                                 WHERE Id=@id;";
             cmd.Parameters.AddWithValue("@eid", v.EmployeeId);
             cmd.Parameters.AddWithValue("@start", v.StartDate.ToString("yyyy-MM-dd"));
             cmd.Parameters.AddWithValue("@end", v.EndDate.ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@vtid", v.VacationTypeId);
             cmd.Parameters.AddWithValue("@comment", v.Comment ?? "");
             cmd.Parameters.AddWithValue("@id", v.Id);
             cmd.ExecuteNonQuery();

@@ -629,6 +629,7 @@ private void DgvCalendar_Paint(object? sender, PaintEventArgs e)
             menu.Items.Add(menuMitarbeiter);
 
             var menuOptions = new ToolStripMenuItem("Optionen");
+            
             var menuDepartments = new ToolStripMenuItem("Abteilungen");
             menuDepartments.Click += (s, e) =>
             {
@@ -636,6 +637,15 @@ private void DgvCalendar_Paint(object? sender, PaintEventArgs e)
                 f.ShowDialog(this);
             };
             menuOptions.DropDownItems.Add(menuDepartments);
+
+            var menuVacationTypes = new ToolStripMenuItem("Urlaubstypen");
+            menuVacationTypes.Click += (s, e) =>
+            {
+                using var f = new Forms.VacationTypesForm();
+                f.ShowDialog(this);
+            };
+            menuOptions.DropDownItems.Add(menuVacationTypes);
+
             menu.Items.Add(menuOptions);
         }
     }

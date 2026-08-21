@@ -62,6 +62,9 @@ namespace VacationApp.Forms
             }
         }
 
-        private void btnRefresh_Click(object sender, EventArgs e) => LoadEmployees();
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
     }
 }
