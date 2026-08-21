@@ -90,24 +90,29 @@ namespace VacationApp
                         var json = await response.Content.ReadAsStringAsync();
                         System.Diagnostics.Debug.WriteLine($"API Response: {json}");
                         
-                        var holidaysData = JsonSerializer.Deserialize<JsonElement>(json);
+                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
                         Holidays.Clear();
 
-                        if (holidaysData.TryGetProperty("BW", out var bwData) && bwData.ValueKind == JsonValueKind.Array)
+                        if (holidaysData != null && holidaysData.ContainsKey("BW"))
                         {
-                            foreach (var holiday in bwData.EnumerateArray())
+                            var bwData = holidaysData["BW"];
+                            if (bwData.ValueKind == JsonValueKind.Array)
                             {
-                                if (holiday.TryGetProperty("start", out var startProp) &&
-                                    holiday.TryGetProperty("end", out var endProp))
+                                foreach (var holiday in bwData.EnumerateArray())
                                 {
-                                    var startStr = startProp.GetString();
-                                    var endStr = endProp.GetString();
-                                    
-                                    if (DateTime.TryParse(startStr, out var start) &&
-                                        DateTime.TryParse(endStr, out var end))
+                                    if (holiday.TryGetProperty("start", out var startProp) &&
+                                        holiday.TryGetProperty("end", out var endProp))
                                     {
-                                        Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
-                                        System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
+                                        var startStr = startProp.GetString();
+                                        var endStr = endProp.GetString();
+                                        
+                                        if (!string.IsNullOrEmpty(startStr) && !string.IsNullOrEmpty(endStr) &&
+                                            DateTime.TryParse(startStr, out var start) &&
+                                            DateTime.TryParse(endStr, out var end))
+                                        {
+                                            Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
+                                            System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
+                                        }
                                     }
                                 }
                             }
