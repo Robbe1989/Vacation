@@ -24,6 +24,19 @@ namespace VacationApp.Forms
             if (cmbEmployee.Items.Count > 0)
                 cmbEmployee.SelectedIndex = 0;
 
+            // Load vacation types
+            var vacationTypes = Database.GetAllVacationTypes();
+            cmbVacationType.Items.Clear();
+            cmbVacationType.DisplayMember = "Name";
+            cmbVacationType.ValueMember = "Id";
+            foreach (var vt in vacationTypes)
+            {
+                cmbVacationType.Items.Add(vt);
+            }
+
+            if (cmbVacationType.Items.Count > 0)
+                cmbVacationType.SelectedIndex = 0;
+
             if (v == null)
             {
                 Vacation = new Vacation();
@@ -39,6 +52,16 @@ namespace VacationApp.Forms
                 dtpStart.Value = v.StartDate;
                 dtpEnd.Value = v.EndDate;
                 txtComment.Text = v.Comment;
+
+                // Set vacation type
+                foreach (VacationType vt in cmbVacationType.Items)
+                {
+                    if (vt.Id == v.VacationTypeId)
+                    {
+                        cmbVacationType.SelectedItem = vt;
+                        break;
+                    }
+                }
             }
         }
 
@@ -51,9 +74,23 @@ namespace VacationApp.Forms
                 return;
             }
 
+            if (cmbVacationType.SelectedItem == null)
+            {
+                MessageBox.Show("Urlaubstyp auswählen!");
+                return;
+            }
+
+            var selectedVacationType = cmbVacationType.SelectedItem as VacationType;
+            if (selectedVacationType == null)
+            {
+                MessageBox.Show("Urlaubstyp auswählen!");
+                return;
+            }
+
             Vacation.EmployeeId = emp.Id;
             Vacation.StartDate = dtpStart.Value;
             Vacation.EndDate = dtpEnd.Value;
+            Vacation.VacationTypeId = selectedVacationType.Id;
             Vacation.Comment = txtComment.Text.Trim();
 
             DialogResult = DialogResult.OK;

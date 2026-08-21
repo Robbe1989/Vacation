@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Windows.Forms;
 using VacationApp.Data;
 using VacationApp.Models;
@@ -20,7 +21,13 @@ namespace VacationApp.Forms
             dgvVacationTypes.Rows.Clear();
             foreach (var vt in list)
             {
-                var idx = dgvVacationTypes.Rows.Add(vt.Id, vt.Abbreviation, vt.Name);
+                var idx = dgvVacationTypes.Rows.Add(vt.Id, vt.Abbreviation, vt.Name, "");
+                
+                // Farbspalte mit Hintergrund
+                var cell = dgvVacationTypes.Rows[idx].Cells[3];
+                cell.Style.BackColor = vt.GetColor();
+                cell.Value = vt.ColorHex;
+                
                 dgvVacationTypes.Rows[idx].Tag = vt;
             }
         }

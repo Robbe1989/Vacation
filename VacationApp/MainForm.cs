@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace VacationApp
     public partial class MainForm : Form
     {
         private const int DayColumnWidth = 28;
+        private Dictionary<int, VacationType> VacationTypesCache = new Dictionary<int, VacationType>();
 
         public MainForm()
         {
@@ -37,7 +39,7 @@ namespace VacationApp
             dgvCalendar.Resize += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnDisplayIndexChanged += (s, e) => panelMonthHeader.Invalidate();
             panelMonthHeader.Paint += PanelMonthHeader_Paint;
-			dgvCalendar.RowPostPaint += DgvCalendar_RowPostPaint;
+            dgvCalendar.RowPostPaint += DgvCalendar_RowPostPaint;
 
             // Erstes Laden erst nach dem Anzeigen, damit das DGV Layout/Spaltenrechtecke hat
             this.Shown += (s, e) =>
@@ -89,6 +91,14 @@ namespace VacationApp
                 dgvCalendar.SuspendLayout();
                 dgvCalendar.Columns.Clear();
                 dgvCalendar.Rows.Clear();
+
+                // Cache Urlaubstypen mit Farben
+                VacationTypesCache.Clear();
+                var vacationTypes = Database.GetAllVacationTypes();
+                foreach (var vt in vacationTypes)
+                {
+                    VacationTypesCache[vt.Id] = vt;
+                }
 
                 var employees = Database.GetAllEmployees();
                 var vacations = Database.GetVacationsForYear(year);
@@ -152,7 +162,8 @@ namespace VacationApp
                     object[] values = new object[1 + daysInYear + 1];
                     values[0] = emp.Name;
 
-                    var dayMarks = new bool[daysInYear];
+                    // Dictionary um mehrere Urlaubstypen pro Tag zu tracken
+                    var dayVacations = new Dictionary<int, Vacation>();
 
                     var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
                     foreach (var v in vlist)
@@ -163,18 +174,22 @@ namespace VacationApp
                         int startIndex = (s - firstOfYear).Days;
                         int endIndex = (e - firstOfYear).Days;
                         for (int i = startIndex; i <= endIndex && i < daysInYear; i++)
-                            if (i >= 0) dayMarks[i] = true;
+                        {
+                            if (i >= 0)
+                                dayVacations[i] = v;
+                        }
                     }
 
                     int total = 0;
                     for (int d = 0; d < daysInYear; d++)
                     {
-                        if (dayMarks[d])
+                        if (dayVacations.ContainsKey(d))
                         {
                             values[1 + d] = "●";
                             total++;
                         }
-                        else values[1 + d] = "";
+                        else 
+                            values[1 + d] = "";
                     }
                     values[1 + daysInYear] = total > 0 ? total.ToString() : "";
 
@@ -184,10 +199,18 @@ namespace VacationApp
                     {
                         for (int d = 0; d < daysInYear; d++)
                         {
-                            if (dayMarks[d])
+                            if (dayVacations.ContainsKey(d))
                             {
                                 var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
-                                var vacColor = Color.LightSalmon;
+                                var vacation = dayVacations[d];
+                                
+                                // Farbe basierend auf VacationType
+                                Color vacColor = Color.LightSalmon; // Default
+                                if (VacationTypesCache.ContainsKey(vacation.VacationTypeId))
+                                {
+                                    vacColor = VacationTypesCache[vacation.VacationTypeId].GetColor();
+                                }
+
                                 cell.Style.BackColor = vacColor;
                                 cell.Style.SelectionBackColor = vacColor;
                                 cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
@@ -215,8 +238,8 @@ namespace VacationApp
         private void PanelMonthHeader_Paint(object? sender, PaintEventArgs e)
         {
             var g = e.Graphics;
-			g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
             try
             {
                 g.Clear(panelMonthHeader.BackColor);
@@ -229,9 +252,9 @@ g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None;
                 var firstOfYear = new DateTime(year, 1, 1);
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-int bannerHeight = 35;
-int kwHeight = 20;
-int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - kwHeight;
+                int bannerHeight = 35;
+                int kwHeight = 20;
+                int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - kwHeight;
 
                 var colorOdd = Color.FromArgb(255, 250, 205);
                 var colorEven = Color.FromArgb(200, 235, 255);
@@ -291,154 +314,136 @@ int dayHeaderHeight = panelMonthHeader.Height - bannerHeight - kwHeight;
                     var monthRect = new Rectangle(xStart, 0, Math.Min(width, panelMonthHeader.Width - xStart), bannerHeight - 1);
                     if (monthRect.Width <= 2) continue;
 
-var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
-using var brushBanner = new SolidBrush(fillColor);
+                    var fillColor = (month % 2 == 0) ? colorEven : colorOdd;
+                    using var brushBanner = new SolidBrush(fillColor);
 
-g.FillRectangle(brushBanner, monthRect);
-g.DrawRectangle(penBanner, monthRect);
+                    g.FillRectangle(brushBanner, monthRect);
+                    g.DrawRectangle(penBanner, monthRect);
                     var monthName = new DateTime(year, month, 1).ToString("MMMM", CultureInfo.CurrentCulture);
                     using var bigFont = new Font(this.Font.FontFamily, Math.Max(12f, this.Font.Size + 2f), FontStyle.Bold);
-					
                     g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
                 }
-				// Tag-Header-Grund
-				// Kalenderwochen
-using (var kwFont = new Font(this.Font.FontFamily, 8f, FontStyle.Bold))
-using (var kwBrush = new SolidBrush(Color.FromArgb(220, 220, 220)))
-using (var kwPen = new Pen(Color.Gray))
-{
-    int currentKw = -1;
-    int kwStartX = -1;
 
-    for (int d = 0; d < daysInYear; d++)
-    {
-        DateTime date = firstOfYear.AddDays(d);
-
-        int kw = ISOWeek.GetWeekOfYear(date);
-
-        Rectangle rect;
-        try
-        {
-            rect = dgvCalendar.GetColumnDisplayRectangle(1 + d, true);
-        }
-        catch
-        {
-            continue;
-        }
-
-        if (rect.Width <= 0)
-            continue;
-
-        if (currentKw == -1)
-        {
-            currentKw = kw;
-            kwStartX = rect.Left;
-        }
-
-        bool kwEnds =
-            d == daysInYear - 1 ||
-            ISOWeek.GetWeekOfYear(firstOfYear.AddDays(d + 1)) != currentKw;
-
-        if (kwEnds)
-        {
-            int width = rect.Right - kwStartX;
-
-            Rectangle kwRect = new Rectangle(
-                kwStartX,
-                bannerHeight,
-                width,
-                kwHeight);
-
-            g.FillRectangle(kwBrush, kwRect);
-
-using var kwBorderPen = new Pen(Color.DimGray, 1.5f);
-
-// obere Linie
-g.DrawLine(
-    kwPen,
-    kwRect.Left,
-    kwRect.Top,
-    kwRect.Right - 1,
-    kwRect.Top);
-
-// untere Linie
-g.DrawLine(
-    kwPen,
-    kwRect.Left,
-    kwRect.Bottom - 1,
-    kwRect.Right - 1,
-    kwRect.Bottom - 1);
-
-// linke dicke KW-Trennlinie
-g.DrawLine(
-    kwBorderPen,
-    kwRect.Left,
-    bannerHeight,
-    kwRect.Left,
-    panelMonthHeader.Height);
-
-// rechte dicke KW-Trennlinie
-g.DrawLine(
-    kwBorderPen,
-    kwRect.Right - 1,
-    bannerHeight,
-    kwRect.Right - 1,
-    panelMonthHeader.Height);
-
-			
-			
-/* // linke KW-Grenze
-g.DrawLine(
-    Pens.Gray,
-    kwRect.Left,
-    bannerHeight,
-    kwRect.Left,
-    panelMonthHeader.Height);
-
-// rechte KW-Grenze
-g.DrawLine(
-    Pens.Gray,
-    kwRect.Right,
-    bannerHeight,
-    kwRect.Right,
-    panelMonthHeader.Height); */
-
-            g.DrawString(
-                $"KW {currentKw}",
-                kwFont,
-                Brushes.Black,
-                kwRect,
-                new StringFormat
+                // Tag-Header-Grund
+                // Kalenderwochen
+                using (var kwFont = new Font(this.Font.FontFamily, 8f, FontStyle.Bold))
+                using (var kwBrush = new SolidBrush(Color.FromArgb(220, 220, 220)))
+                using (var kwPen = new Pen(Color.Gray))
                 {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center
-                });
+                    int currentKw = -1;
+                    int kwStartX = -1;
 
-            currentKw =
-                d < daysInYear - 1
-                ? ISOWeek.GetWeekOfYear(firstOfYear.AddDays(d + 1))
-                : -1;
+                    for (int d = 0; d < daysInYear; d++)
+                    {
+                        DateTime date = firstOfYear.AddDays(d);
 
-            kwStartX = rect.Right;
-        }
-    }
-}
+                        int kw = ISOWeek.GetWeekOfYear(date);
+
+                        Rectangle rect;
+                        try
+                        {
+                            rect = dgvCalendar.GetColumnDisplayRectangle(1 + d, true);
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+
+                        if (rect.Width <= 0)
+                            continue;
+
+                        if (currentKw == -1)
+                        {
+                            currentKw = kw;
+                            kwStartX = rect.Left;
+                        }
+
+                        bool kwEnds =
+                            d == daysInYear - 1 ||
+                            ISOWeek.GetWeekOfYear(firstOfYear.AddDays(d + 1)) != currentKw;
+
+                        if (kwEnds)
+                        {
+                            int width = rect.Right - kwStartX;
+
+                            Rectangle kwRect = new Rectangle(
+                                kwStartX,
+                                bannerHeight,
+                                width,
+                                kwHeight);
+
+                            g.FillRectangle(kwBrush, kwRect);
+
+                            using var kwBorderPen = new Pen(Color.DimGray, 1.5f);
+
+                            // obere Linie
+                            g.DrawLine(
+                                kwPen,
+                                kwRect.Left,
+                                kwRect.Top,
+                                kwRect.Right - 1,
+                                kwRect.Top);
+
+                            // untere Linie
+                            g.DrawLine(
+                                kwPen,
+                                kwRect.Left,
+                                kwRect.Bottom - 1,
+                                kwRect.Right - 1,
+                                kwRect.Bottom - 1);
+
+                            // linke dicke KW-Trennlinie
+                            g.DrawLine(
+                                kwBorderPen,
+                                kwRect.Left,
+                                bannerHeight,
+                                kwRect.Left,
+                                panelMonthHeader.Height);
+
+                            // rechte dicke KW-Trennlinie
+                            g.DrawLine(
+                                kwBorderPen,
+                                kwRect.Right - 1,
+                                bannerHeight,
+                                kwRect.Right - 1,
+                                panelMonthHeader.Height);
+
+                            g.DrawString(
+                                $"KW {currentKw}",
+                                kwFont,
+                                Brushes.Black,
+                                kwRect,
+                                new StringFormat
+                                {
+                                    Alignment = StringAlignment.Center,
+                                    LineAlignment = StringAlignment.Center
+                                });
+
+                            currentKw =
+                                d < daysInYear - 1
+                                ? ISOWeek.GetWeekOfYear(firstOfYear.AddDays(d + 1))
+                                : -1;
+
+                            kwStartX = rect.Right;
+                        }
+                    }
+                }
 
                 // Tag-Header-Grund
                 using (var brushDayBg = new SolidBrush(Color.White))
                 using (var penGrid = new Pen(Color.LightGray))
                 {
                     var dayAreaRect = new Rectangle(
-    0,
-    bannerHeight + kwHeight,
-    panelMonthHeader.Width,
-    dayHeaderHeight);
+                        0,
+                        bannerHeight + kwHeight,
+                        panelMonthHeader.Width,
+                        dayHeaderHeight);
                     g.FillRectangle(brushDayBg, dayAreaRect);
                     g.DrawLine(penGrid,
-    0,
-    bannerHeight + kwHeight,
-    panelMonthHeader.Width,
-    bannerHeight + kwHeight);
+                        0,
+                        bannerHeight + kwHeight,
+                        panelMonthHeader.Width,
+                        bannerHeight + kwHeight);
                 }
 
                 // Tage + Wochentage + Wochenendshading
@@ -453,17 +458,17 @@ g.DrawLine(
                         Rectangle rect;
                         try { rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true); }
                         catch { continue; }
-						
+
                         if (rect.Width == 0 && rect.Right <= 0) continue;
                         if (rect.Width == 0 && rect.Left >= dgvCalendar.ClientSize.Width) continue;
 
                         int x = rect.Left;
                         int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
                         var cellRect = new Rectangle(
-    x,
-    bannerHeight + kwHeight,
-    w,
-    dayHeaderHeight);
+                            x,
+                            bannerHeight + kwHeight,
+                            w,
+                            dayHeaderHeight);
 
                         var date = firstOfYear.AddDays(d);
                         if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
@@ -471,13 +476,12 @@ g.DrawLine(
                             g.FillRectangle(brushWeekend, cellRect);
                         }
 
-g.DrawRectangle(
-    penGridLines,
-    cellRect.Left,
-    cellRect.Top,
-    cellRect.Width - 1,
-    cellRect.Height - 1);
-
+                        g.DrawRectangle(
+                            penGridLines,
+                            cellRect.Left,
+                            cellRect.Top,
+                            cellRect.Width - 1,
+                            cellRect.Height - 1);
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
                         var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
@@ -498,13 +502,12 @@ g.DrawRectangle(
                             if (lastRect.Width > 0)
                             {
                                 int xRight = lastRect.Right;
-g.DrawLine(
-    penGridLines,
-    xRight - 1,
-    bannerHeight,
-    xRight - 1,
-    panelMonthHeader.Height);
-
+                                g.DrawLine(
+                                    penGridLines,
+                                    xRight - 1,
+                                    bannerHeight,
+                                    xRight - 1,
+                                    panelMonthHeader.Height);
                             }
                         }
                         catch { }
@@ -517,102 +520,102 @@ g.DrawLine(
             }
         }
 
-private void DgvCalendar_RowPostPaint(
-    object? sender,
-    DataGridViewRowPostPaintEventArgs e)
-{
-    int year = (int)nudYear.Value;
-    DateTime firstOfYear = new DateTime(year, 1, 1);
-    int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
-
-    using var kwPen = new Pen(Color.Black, 2f);
-
-    for (int d = 0; d < daysInYear; d++)
-    {
-        DateTime date = firstOfYear.AddDays(d);
-
-        bool isKwStart =
-            d == 0 ||
-            date.DayOfWeek == DayOfWeek.Monday;
-
-        if (!isKwStart)
-            continue;
-
-        int colIndex = d + 1;
-
-        Rectangle rect;
-
-        try
+        private void DgvCalendar_RowPostPaint(
+            object? sender,
+            DataGridViewRowPostPaintEventArgs e)
         {
-            rect = dgvCalendar.GetCellDisplayRectangle(
-                colIndex,
-                e.RowIndex,
-                true);
-        }
-        catch
-        {
-            continue;
-        }
+            int year = (int)nudYear.Value;
+            DateTime firstOfYear = new DateTime(year, 1, 1);
+            int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-        if (rect.Width <= 0)
-            continue;
+            using var kwPen = new Pen(Color.Black, 2f);
 
-        e.Graphics.DrawLine(
-            kwPen,
-            rect.Left,
-            rect.Top,
-            rect.Left,
-            rect.Bottom);
-    }
-}
+            for (int d = 0; d < daysInYear; d++)
+            {
+                DateTime date = firstOfYear.AddDays(d);
 
-private void DgvCalendar_Paint(object? sender, PaintEventArgs e)
-{
-    int year = (int)nudYear.Value;
-    DateTime firstOfYear = new DateTime(year, 1, 1);
-    int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
+                bool isKwStart =
+                    d == 0 ||
+                    date.DayOfWeek == DayOfWeek.Monday;
 
-    using var kwPen = new Pen(Color.Black, 2f);
+                if (!isKwStart)
+                    continue;
 
-    for (int d = 0; d < daysInYear; d++)
-    {
-        DateTime date = firstOfYear.AddDays(d);
+                int colIndex = d + 1;
 
-        bool isKwStart =
-            d == 0 ||
-            date.DayOfWeek == DayOfWeek.Monday;
+                Rectangle rect;
 
-        if (!isKwStart)
-            continue;
+                try
+                {
+                    rect = dgvCalendar.GetCellDisplayRectangle(
+                        colIndex,
+                        e.RowIndex,
+                        true);
+                }
+                catch
+                {
+                    continue;
+                }
 
-        int colIndex = d + 1;
+                if (rect.Width <= 0)
+                    continue;
 
-        Rectangle rect;
-
-        try
-        {
-            rect = dgvCalendar.GetColumnDisplayRectangle(
-                colIndex,
-                true);
-        }
-        catch
-        {
-            continue;
+                e.Graphics.DrawLine(
+                    kwPen,
+                    rect.Left,
+                    rect.Top,
+                    rect.Left,
+                    rect.Bottom);
+            }
         }
 
-        if (rect.Width <= 0)
-            continue;
+        private void DgvCalendar_Paint(object? sender, PaintEventArgs e)
+        {
+            int year = (int)nudYear.Value;
+            DateTime firstOfYear = new DateTime(year, 1, 1);
+            int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-        e.Graphics.DrawLine(
-            kwPen,
-            rect.Left,
-            0,
-            rect.Left,
-            dgvCalendar.DisplayRectangle.Height);
-    }
-}
+            using var kwPen = new Pen(Color.Black, 2f);
 
-                private void AddMenu()
+            for (int d = 0; d < daysInYear; d++)
+            {
+                DateTime date = firstOfYear.AddDays(d);
+
+                bool isKwStart =
+                    d == 0 ||
+                    date.DayOfWeek == DayOfWeek.Monday;
+
+                if (!isKwStart)
+                    continue;
+
+                int colIndex = d + 1;
+
+                Rectangle rect;
+
+                try
+                {
+                    rect = dgvCalendar.GetColumnDisplayRectangle(
+                        colIndex,
+                        true);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (rect.Width <= 0)
+                    continue;
+
+                e.Graphics.DrawLine(
+                    kwPen,
+                    rect.Left,
+                    0,
+                    rect.Left,
+                    dgvCalendar.DisplayRectangle.Height);
+            }
+        }
+
+        private void AddMenu()
         {
             var menu = this.menuStrip1;
             menu.Items.Clear();
@@ -643,6 +646,8 @@ private void DgvCalendar_Paint(object? sender, PaintEventArgs e)
             {
                 using var f = new Forms.VacationTypesForm();
                 f.ShowDialog(this);
+                // Reload Calendar um neue Farben zu zeigen
+                LoadCalendar((int)nudYear.Value);
             };
             menuOptions.DropDownItems.Add(menuVacationTypes);
 

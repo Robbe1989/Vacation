@@ -80,6 +80,32 @@ namespace VacationApp.Data
 
             // Stelle sicher, dass Standardurlaubstypen existieren
             EnsureDefaultVacationTypes(conn);
+			
+			
+			// Migriere Farbe für VacationTypes falls nötig
+            using (var checkCmd = conn.CreateCommand())
+            {
+                checkCmd.CommandText = "PRAGMA table_info(VacationTypes);";
+                using var reader = checkCmd.ExecuteReader();
+                bool hasColorHex = false;
+                while (reader.Read())
+                {
+                    var colName = reader["name"]?.ToString() ?? "";
+                    if (string.Equals(colName, "ColorHex", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasColorHex = true;
+                        break;
+                    }
+                }
+                reader.Close();
+
+                if (!hasColorHex)
+                {
+                    using var alter = conn.CreateCommand();
+                    alter.CommandText = "ALTER TABLE VacationTypes ADD COLUMN ColorHex TEXT DEFAULT '#FFA500';";
+                    alter.ExecuteNonQuery();
+                }
+            }
 
             // Ensure VacationDays column exists (legacy migrations)
             using (var checkCmd = conn.CreateCommand())
@@ -275,7 +301,7 @@ namespace VacationApp.Data
             using var conn = GetConnection();
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Id, Abbreviation, Name FROM VacationTypes ORDER BY Name;";
+            cmd.CommandText = "SELECT Id, Abbreviation, Name, COALESCE(ColorHex, '#FFA500') FROM VacationTypes ORDER BY Name;";
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
@@ -283,20 +309,22 @@ namespace VacationApp.Data
                 {
                     Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
                     Abbreviation = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
-                    Name = rdr.IsDBNull(2) ? "" : rdr.GetString(2)
+                    Name = rdr.IsDBNull(2) ? "" : rdr.GetString(2),
+                    ColorHex = rdr.IsDBNull(3) ? "#FFA500" : rdr.GetString(3)
                 });
             }
             return list;
         }
 
-        public static int AddVacationType(VacationType vt)
+         public static int AddVacationType(VacationType vt)
         {
             using var conn = GetConnection();
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "INSERT INTO VacationTypes (Abbreviation, Name) VALUES (@abbr, @name); SELECT last_insert_rowid();";
+            cmd.CommandText = "INSERT INTO VacationTypes (Abbreviation, Name, ColorHex) VALUES (@abbr, @name, @color); SELECT last_insert_rowid();";
             cmd.Parameters.AddWithValue("@abbr", vt.Abbreviation ?? "");
             cmd.Parameters.AddWithValue("@name", vt.Name ?? "");
+            cmd.Parameters.AddWithValue("@color", vt.ColorHex ?? "#FFA500");
             var id = Convert.ToInt32(cmd.ExecuteScalar());
             return id;
         }
@@ -306,9 +334,10 @@ namespace VacationApp.Data
             using var conn = GetConnection();
             conn.Open();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "UPDATE VacationTypes SET Abbreviation=@abbr, Name=@name WHERE Id=@id;";
+            cmd.CommandText = "UPDATE VacationTypes SET Abbreviation=@abbr, Name=@name, ColorHex=@color WHERE Id=@id;";
             cmd.Parameters.AddWithValue("@abbr", vt.Abbreviation ?? "");
             cmd.Parameters.AddWithValue("@name", vt.Name ?? "");
+            cmd.Parameters.AddWithValue("@color", vt.ColorHex ?? "#FFA500");
             cmd.Parameters.AddWithValue("@id", vt.Id);
             cmd.ExecuteNonQuery();
         }
