@@ -75,7 +75,7 @@ namespace VacationApp
                 {
                     client.Timeout = TimeSpan.FromSeconds(5); // Timeout nach 5 Sekunden
                     // URL mit dynamischem Jahr - API gibt direktes Array zurück
-                    var url = $"https://www.ferien-api.maxleistner.de/api/v2.1/{year}?states=BW";
+                    var url = $"https://www.ferien-api.maxleistner.de/api/v2/{year}?states=BW";
                     var response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode)
                     {
