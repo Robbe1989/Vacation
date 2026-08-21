@@ -1,4 +1,3 @@
-// name=VacationApp/Models/Vacation.cs
 using System;
 
 namespace VacationApp.Models
