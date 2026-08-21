@@ -493,51 +493,52 @@ g.DrawLine(
             }
         }
 
-private void DgvCalendar_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
+private void DgvCalendar_RowPostPaint(
+    object? sender,
+    DataGridViewRowPostPaintEventArgs e)
 {
-    if (e.RowIndex < 0)
-        return;
-
-    if (e.ColumnIndex < 1 || e.ColumnIndex >= dgvCalendar.Columns.Count - 1)
-        return;
-
     int year = (int)nudYear.Value;
     DateTime firstOfYear = new DateTime(year, 1, 1);
-
-    int dayIndex = e.ColumnIndex - 1;
-    DateTime currentDate = firstOfYear.AddDays(dayIndex);
-
-    bool isKwStart =
-        dayIndex == 0 ||
-        currentDate.DayOfWeek == DayOfWeek.Monday;
-
-    bool isKwEnd =
-        dayIndex == (DateTime.IsLeapYear(year) ? 365 : 364) ||
-        currentDate.DayOfWeek == DayOfWeek.Sunday;
-
-    if (!isKwStart && !isKwEnd)
-        return;
+    int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
     using var kwPen = new Pen(Color.Black, 2f);
 
-    if (isKwStart)
+    for (int d = 0; d < daysInYear; d++)
     {
-        e.Graphics.DrawLine(
-            kwPen,
-            e.CellBounds.Left,
-            e.CellBounds.Top,
-            e.CellBounds.Left,
-            e.CellBounds.Bottom);
-    }
+        DateTime date = firstOfYear.AddDays(d);
 
-    if (isKwEnd)
-    {
+        bool isKwStart =
+            d == 0 ||
+            date.DayOfWeek == DayOfWeek.Monday;
+
+        if (!isKwStart)
+            continue;
+
+        int colIndex = d + 1;
+
+        Rectangle rect;
+
+        try
+        {
+            rect = dgvCalendar.GetCellDisplayRectangle(
+                colIndex,
+                e.RowIndex,
+                true);
+        }
+        catch
+        {
+            continue;
+        }
+
+        if (rect.Width <= 0)
+            continue;
+
         e.Graphics.DrawLine(
             kwPen,
-            e.CellBounds.Right - 1,
-            e.CellBounds.Top,
-            e.CellBounds.Right - 1,
-            e.CellBounds.Bottom);
+            rect.Left,
+            rect.Top,
+            rect.Left,
+            rect.Bottom);
     }
 }
 
