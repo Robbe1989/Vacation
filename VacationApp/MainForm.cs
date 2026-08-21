@@ -133,8 +133,8 @@ namespace VacationApp
                     {
                         col.DefaultCellStyle = new DataGridViewCellStyle
                         {
-                            BackColor = Color.FromArgb(240, 240, 240),
-                            SelectionBackColor = Color.FromArgb(240, 240, 240),
+                            BackColor = Color.FromArgb(160, 160, 160),
+                            SelectionBackColor = Color.FromArgb(160, 160, 160),
                             SelectionForeColor = Color.Black
                         };
                     }
@@ -282,7 +282,7 @@ namespace VacationApp
                 var colorOdd = Color.FromArgb(255, 250, 205);
                 var colorEven = Color.FromArgb(200, 235, 255);
 
-                using var penBanner = new Pen(Color.LightGray);
+                using var penBanner = new Pen(Color.FromArgb(160, 160, 160));
                 using var sfCenterTop = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
                 // Monatsbanner (alternierend)
@@ -350,7 +350,7 @@ namespace VacationApp
                 // Tag-Header-Grund
                 // Kalenderwochen
                 using (var kwFont = new Font(this.Font.FontFamily, 8f, FontStyle.Bold))
-                using (var kwBrush = new SolidBrush(Color.FromArgb(220, 220, 220)))
+                using (var kwBrush = new SolidBrush(Color.FromArgb(160, 160, 160)))
                 using (var kwPen = new Pen(Color.Gray))
                 {
                     int currentKw = -1;
@@ -454,7 +454,7 @@ namespace VacationApp
 
                 // Tag-Header-Grund
                 using (var brushDayBg = new SolidBrush(Color.White))
-                using (var penGrid = new Pen(Color.LightGray))
+                using (var penGrid = new Pen(Color.FromArgb(160, 160, 160)))
                 {
                     var dayAreaRect = new Rectangle(
                         0,
@@ -473,7 +473,7 @@ namespace VacationApp
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
                 using (var penGridLines = new Pen(Color.Gray))
-                using (var brushWeekend = new SolidBrush(Color.FromArgb(240, 240, 240)))
+                using (var brushWeekend = new SolidBrush(Color.FromArgb(160, 160, 160)))
                 {
                     for (int d = 0; d < daysInYear; d++)
                     {

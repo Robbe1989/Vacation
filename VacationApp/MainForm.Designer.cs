@@ -34,6 +34,7 @@
             this.panelTop.Controls.Add(this.lblYear);
             this.panelTop.Controls.Add(this.nudYear);
             this.panelTop.Controls.Add(this.btnManageVacations);
+            this.panelTop.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
 
             // lblYear
             this.lblYear.Text = "Jahr:";
@@ -53,14 +54,14 @@
             this.btnManageVacations.Location = new System.Drawing.Point(160, 6);
             this.btnManageVacations.Size = new System.Drawing.Size(140, 26);
             this.btnManageVacations.Name = "btnManageVacations";
-            this.btnManageVacations.BackColor = System.Drawing.Color.LightGray;
+            this.btnManageVacations.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
             this.btnManageVacations.ForeColor = System.Drawing.Color.White;
 
             // monthButtonPanel
             this.monthButtonPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.monthButtonPanel.Height = 40;
             this.monthButtonPanel.AutoScroll = true;
-            this.monthButtonPanel.BackColor = System.Drawing.Color.LightGray;
+            this.monthButtonPanel.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
             this.monthButtonPanel.Padding = new System.Windows.Forms.Padding(5);
             this.monthButtonPanel.Name = "monthButtonPanel";
 
@@ -75,7 +76,7 @@
                 this.monthButtons[i].Text = monthNames[i];
                 this.monthButtons[i].Width = 75;
                 this.monthButtons[i].Height = 30;
-                this.monthButtons[i].BackColor = System.Drawing.Color.LightGray;
+                this.monthButtons[i].BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
                 this.monthButtons[i].FlatStyle = System.Windows.Forms.FlatStyle.Standard;
                 this.monthButtons[i].Margin = new System.Windows.Forms.Padding(2);
                 this.monthButtons[i].Name = "btn" + monthNames[i];
@@ -90,7 +91,7 @@
             // panelMonthHeader
             this.panelMonthHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelMonthHeader.Height = 92;
-            this.panelMonthHeader.BackColor = System.Drawing.Color.LightGray;
+            this.panelMonthHeader.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
             this.panelMonthHeader.Name = "panelMonthHeader";
 
             // dgvCalendar
@@ -112,6 +113,7 @@
 
             // MainForm
             this.ClientSize = new System.Drawing.Size(1200, 700);
+            this.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
             this.Controls.Add(this.dgvCalendar);
             this.Controls.Add(this.panelMonthHeader);
             this.Controls.Add(this.monthButtonPanel);
