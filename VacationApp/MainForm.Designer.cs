@@ -40,6 +40,7 @@
             this.lblYear.Text = "Jahr:";
             this.lblYear.AutoSize = true;
             this.lblYear.Location = new System.Drawing.Point(12, 10);
+            this.lblYear.ForeColor = System.Drawing.Color.White;
 
             // nudYear
             this.nudYear.Minimum = 2000;
@@ -54,8 +55,9 @@
             this.btnManageVacations.Location = new System.Drawing.Point(160, 6);
             this.btnManageVacations.Size = new System.Drawing.Size(140, 26);
             this.btnManageVacations.Name = "btnManageVacations";
-            this.btnManageVacations.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
-            this.btnManageVacations.ForeColor = System.Drawing.Color.White;
+            this.btnManageVacations.BackColor = System.Drawing.Color.FromArgb(253, 253, 253);
+            this.btnManageVacations.ForeColor = System.Drawing.Color.Black;
+            this.btnManageVacations.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
 
             // monthButtonPanel
             this.monthButtonPanel.Dock = System.Windows.Forms.DockStyle.Top;
@@ -76,7 +78,8 @@
                 this.monthButtons[i].Text = monthNames[i];
                 this.monthButtons[i].Width = 75;
                 this.monthButtons[i].Height = 30;
-                this.monthButtons[i].BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
+                this.monthButtons[i].BackColor = System.Drawing.Color.FromArgb(253, 253, 253);
+                this.monthButtons[i].ForeColor = System.Drawing.Color.Black;
                 this.monthButtons[i].FlatStyle = System.Windows.Forms.FlatStyle.Standard;
                 this.monthButtons[i].Margin = new System.Windows.Forms.Padding(2);
                 this.monthButtons[i].Name = "btn" + monthNames[i];

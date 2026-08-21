@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using VacationApp.Data;
 using VacationApp.Models;
@@ -13,6 +16,7 @@ namespace VacationApp
     {
         private const int DayColumnWidth = 28;
         private Dictionary<int, VacationType> VacationTypesCache = new Dictionary<int, VacationType>();
+        private List<HolidayRange> Holidays = new List<HolidayRange>();
 
         public MainForm()
         {
@@ -60,6 +64,40 @@ namespace VacationApp
             };
         }
 
+        private async Task LoadHolidays(int year)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    var response = await client.GetAsync($"https://ferien-api.de/api/v1/holidays/{year}/BW");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        var holidays = JsonSerializer.Deserialize<List<JsonElement>>(json);
+                        Holidays.Clear();
+
+                        foreach (var holiday in holidays)
+                        {
+                            if (holiday.TryGetProperty("start", out var startProp) &&
+                                holiday.TryGetProperty("end", out var endProp))
+                            {
+                                if (DateTime.TryParse(startProp.GetString(), out var start) &&
+                                    DateTime.TryParse(endProp.GetString(), out var end))
+                                {
+                                    Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Ferien: {ex.Message}");
+            }
+        }
+
         private void ScrollToMonth(int month)
         {
             try
@@ -84,10 +122,13 @@ namespace VacationApp
             }
         }
 
-        private void LoadCalendar(int year)
+        private async void LoadCalendar(int year)
         {
             try
             {
+                // Lade Ferien asynchron
+                await LoadHolidays(year);
+
                 dgvCalendar.SuspendLayout();
                 dgvCalendar.Columns.Clear();
                 dgvCalendar.Rows.Clear();
@@ -229,6 +270,36 @@ namespace VacationApp
                                 else
                                     cell.Style.ForeColor = Color.White;
                             }
+                        }
+                    }
+                }
+
+                // Ferien-Reihe hinzufügen
+                if (Holidays.Count > 0)
+                {
+                    object[] holidayValues = new object[1 + daysInYear + 1];
+                    holidayValues[0] = "Ferien Baden-Württemberg";
+
+                    for (int d = 0; d < daysInYear; d++)
+                    {
+                        var date = firstOfYear.AddDays(d);
+                        bool isHoliday = Holidays.Any(h => date >= h.StartDate && date <= h.EndDate);
+                        holidayValues[1 + d] = isHoliday ? "F" : "";
+                    }
+
+                    int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
+
+                    // Formatiere die Ferien-Reihe in rot
+                    for (int d = 0; d < daysInYear; d++)
+                    {
+                        if (!string.IsNullOrEmpty(holidayValues[1 + d].ToString()))
+                        {
+                            var cell = dgvCalendar.Rows[holidayRowIndex].Cells[1 + d];
+                            cell.Style.BackColor = Color.Red;
+                            cell.Style.SelectionBackColor = Color.Red;
+                            cell.Style.ForeColor = Color.White;
+                            cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                            cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
                         }
                     }
                 }
@@ -668,5 +739,11 @@ namespace VacationApp
 
             menu.Items.Add(menuOptions);
         }
+    }
+
+    public class HolidayRange
+    {
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
     }
 }
