@@ -55,6 +55,9 @@ namespace VacationApp
                         LoadCalendar((int)nudYear.Value);
                         dgvCalendar.ClearSelection();
                         panelMonthHeader.Invalidate();
+                        
+                        // Scrolle zum heutigen Monat
+                        ScrollToMonth(DateTime.Today.Month);
                     }
                     catch (Exception ex)
                     {
