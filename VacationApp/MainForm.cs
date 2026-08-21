@@ -67,7 +67,60 @@ namespace VacationApp
             };
         }
 
-       
+        private async Task LoadHolidays(int year)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(5);
+                    var url = $"https://www.ferien-api.maxleistner.de/api/v2/{year}?states=BW";
+                    var response = await client.GetAsync(url);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        System.Diagnostics.Debug.WriteLine($"API Response: {json}");
+                        
+                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+                        Holidays.Clear();
+
+                        if (holidaysData != null && holidaysData.ContainsKey("BW"))
+                        {
+                            var bwData = holidaysData["BW"];
+                            if (bwData.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var holiday in bwData.EnumerateArray())
+                                {
+                                    if (holiday.TryGetProperty("start", out var startProp) &&
+                                        holiday.TryGetProperty("end", out var endProp))
+                                    {
+                                        var startStr = startProp.GetString();
+                                        var endStr = endProp.GetString();
+                                        
+                                        if (DateTime.TryParseExact(startStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
+                                            DateTime.TryParseExact(endStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
+                                        {
+                                            Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
+                                            System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        System.Diagnostics.Debug.WriteLine($"Gesamte Ferien geladen: {Holidays.Count}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"API Error: {response.StatusCode}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Ferien: {ex.Message}");
+            }
+        }
+
         private void ScrollToMonth(int month)
         {
             try
@@ -76,11 +129,9 @@ namespace VacationApp
                 var firstOfYear = new DateTime(year, 1, 1);
                 var monthDate = new DateTime(year, month, 1);
                 
-                // Berechne den Spaltenindex für den ersten Tag des Monats
                 int dayIndex = (int)(monthDate - firstOfYear).TotalDays;
-                int columnIndex = dayIndex + 1; // +1 wegen der Mitarbeiter-Spalte
+                int columnIndex = dayIndex + 1;
 
-                // Scrolle zur entsprechenden Spalte
                 if (columnIndex >= 0 && columnIndex < dgvCalendar.Columns.Count)
                 {
                     dgvCalendar.FirstDisplayedScrollingColumnIndex = columnIndex;
@@ -96,7 +147,7 @@ namespace VacationApp
         {
             try
             {
-                // Lade Ferien asynchron (ohne zu warten) - mit aktuellem Jahr
+                // Lade Ferien asynchron
                 _ = LoadHolidays(year);
 
                 dgvCalendar.SuspendLayout();
@@ -141,10 +192,8 @@ namespace VacationApp
                         ToolTipText = date.ToString("dd.MM.yyyy")
                     };
 
-                    // Färbung der Spalte basierend auf Wochenende (nicht heutiger Tag in der Datenzeile)
                     if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                     {
-                        // Wochenende: Grau
                         col.DefaultCellStyle = new DataGridViewCellStyle
                         {
                             BackColor = Color.FromArgb(220, 220, 220),
@@ -154,7 +203,6 @@ namespace VacationApp
                     }
                     else
                     {
-                        // Normale Wochentage
                         col.DefaultCellStyle.SelectionBackColor = Color.White;
                         col.DefaultCellStyle.SelectionForeColor = Color.Black;
                     }
@@ -172,12 +220,47 @@ namespace VacationApp
                 };
                 dgvCalendar.Columns.Add(colTotal);
 
+                // Ferien-Reihe wird ZUERST hinzugefügt
+                object[] holidayValues = new object[1 + daysInYear + 1];
+                holidayValues[0] = "Ferien Baden-Württemberg";
+
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    var date = firstOfYear.AddDays(d);
+                    var holiday = Holidays.FirstOrDefault(h => date >= h.StartDate && date <= h.EndDate);
+                    
+                    if (holiday != null)
+                    {
+                        holidayValues[1 + d] = "F";
+                    }
+                    else
+                    {
+                        holidayValues[1 + d] = "";
+                    }
+                }
+
+                int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
+
+                // Formatiere die Ferien-Reihe in rot
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    if (!string.IsNullOrEmpty(holidayValues[1 + d].ToString()))
+                    {
+                        var cell = dgvCalendar.Rows[holidayRowIndex].Cells[1 + d];
+                        cell.Style.BackColor = Color.Red;
+                        cell.Style.SelectionBackColor = Color.Red;
+                        cell.Style.ForeColor = Color.White;
+                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                        cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                    }
+                }
+
+                // Jetzt werden die Mitarbeiter hinzugefügt
                 foreach (var emp in employees)
                 {
                     object[] values = new object[1 + daysInYear + 1];
                     values[0] = emp.Name;
 
-                    // Dictionary um Urlaubstypen pro Tag zu tracken
                     var dayVacations = new Dictionary<int, Vacation>();
 
                     var vlist = vacations.Where(v => v.EmployeeId == emp.Id).ToList();
@@ -200,7 +283,6 @@ namespace VacationApp
                     {
                         if (dayVacations.ContainsKey(d))
                         {
-                            // Zeige die Abkürzung des Urlaubstyps statt "●"
                             var vacation = dayVacations[d];
                             string abbreviation = "?";
                             if (VacationTypesCache.ContainsKey(vacation.VacationTypeId))
@@ -226,8 +308,7 @@ namespace VacationApp
                                 var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
                                 var vacation = dayVacations[d];
                                 
-                                // Farbe basierend auf VacationType
-                                Color vacColor = Color.LightSalmon; // Default
+                                Color vacColor = Color.LightSalmon;
                                 if (VacationTypesCache.ContainsKey(vacation.VacationTypeId))
                                 {
                                     vacColor = VacationTypesCache[vacation.VacationTypeId].GetColor();
@@ -238,64 +319,12 @@ namespace VacationApp
                                 cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                                 cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
                                 
-                                // Setze Textfarbe basierend auf Hintergrundfarbe (für bessere Lesbarkeit)
                                 if (IsColorLight(vacColor))
                                     cell.Style.ForeColor = Color.Black;
                                 else
                                     cell.Style.ForeColor = Color.White;
                             }
                         }
-                    }
-                }
-
-                // Ferien-Reihe wird IMMER angezeigt (auch wenn noch keine Daten geladen wurden)
-                object[] holidayValues = new object[1 + daysInYear + 1];
-                holidayValues[0] = "Ferien Baden-Württemberg";
-
-                for (int d = 0; d < daysInYear; d++)
-                {
-                    var date = firstOfYear.AddDays(d);
-                    
-                    // Suche nach Ferien, die diesen Tag abdecken
-                    var holiday = Holidays.FirstOrDefault(h => date >= h.StartDate && date <= h.EndDate);
-                    
-                    if (holiday != null)
-                    {
-                        // Zeige Startdatum am ersten Tag der Ferien
-                        if (date == holiday.StartDate)
-                        {
-                            holidayValues[1 + d] = holiday.StartDate.ToString("dd.MM");
-                        }
-                        // Zeige Enddatum am letzten Tag der Ferien
-                        else if (date == holiday.EndDate)
-                        {
-                            holidayValues[1 + d] = holiday.EndDate.ToString("dd.MM");
-                        }
-                        // Andere Tage: einfach "F" für Ferien
-                        else
-                        {
-                            holidayValues[1 + d] = "F";
-                        }
-                    }
-                    else
-                    {
-                        holidayValues[1 + d] = "";
-                    }
-                }
-
-                int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
-
-                // Formatiere die Ferien-Reihe in rot (nur wenn Ferien vorhanden)
-                for (int d = 0; d < daysInYear; d++)
-                {
-                    if (!string.IsNullOrEmpty(holidayValues[1 + d].ToString()))
-                    {
-                        var cell = dgvCalendar.Rows[holidayRowIndex].Cells[1 + d];
-                        cell.Style.BackColor = Color.Red;
-                        cell.Style.SelectionBackColor = Color.Red;
-                        cell.Style.ForeColor = Color.White;
-                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
-                        cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
                     }
                 }
 
@@ -313,17 +342,12 @@ namespace VacationApp
             }
         }
 
-        /// <summary>
-        /// Prüft, ob eine Farbe hell oder dunkel ist
-        /// </summary>
         private bool IsColorLight(Color color)
         {
-            // Berechne Helligkeit: (R*299 + G*587 + B*114) / 1000
             double brightness = (color.R * 299 + color.G * 587 + color.B * 114) / 1000.0;
-            return brightness > 128; // Wenn heller als 128, ist es eine helle Farbe
+            return brightness > 128;
         }
 
-        // Header: Monatsbanner (alternierend), Tagesspalten, Wochenend‑Shading; KW wurden entfernt.
         private void PanelMonthHeader_Paint(object? sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -414,7 +438,6 @@ namespace VacationApp
                     g.DrawString(monthName, bigFont, Brushes.Black, monthRect, sfCenterTop);
                 }
 
-                // Tag-Header-Grund
                 // Kalenderwochen
                 using (var kwFont = new Font(this.Font.FontFamily, 8f, FontStyle.Bold))
                 using (var kwBrush = new SolidBrush(Color.FromArgb(220, 220, 220)))
@@ -466,54 +489,15 @@ namespace VacationApp
 
                             using var kwBorderPen = new Pen(Color.DimGray, 1.5f);
 
-                            // obere Linie
-                            g.DrawLine(
-                                kwPen,
-                                kwRect.Left,
-                                kwRect.Top,
-                                kwRect.Right - 1,
-                                kwRect.Top);
+                            g.DrawLine(kwPen, kwRect.Left, kwRect.Top, kwRect.Right - 1, kwRect.Top);
+                            g.DrawLine(kwPen, kwRect.Left, kwRect.Bottom - 1, kwRect.Right - 1, kwRect.Bottom - 1);
+                            g.DrawLine(kwBorderPen, kwRect.Left, bannerHeight, kwRect.Left, panelMonthHeader.Height);
+                            g.DrawLine(kwBorderPen, kwRect.Right - 1, bannerHeight, kwRect.Right - 1, panelMonthHeader.Height);
 
-                            // untere Linie
-                            g.DrawLine(
-                                kwPen,
-                                kwRect.Left,
-                                kwRect.Bottom - 1,
-                                kwRect.Right - 1,
-                                kwRect.Bottom - 1);
+                            g.DrawString($"KW {currentKw}", kwFont, Brushes.Black, kwRect,
+                                new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
 
-                            // linke dicke KW-Trennlinie
-                            g.DrawLine(
-                                kwBorderPen,
-                                kwRect.Left,
-                                bannerHeight,
-                                kwRect.Left,
-                                panelMonthHeader.Height);
-
-                            // rechte dicke KW-Trennlinie
-                            g.DrawLine(
-                                kwBorderPen,
-                                kwRect.Right - 1,
-                                bannerHeight,
-                                kwRect.Right - 1,
-                                panelMonthHeader.Height);
-
-                            g.DrawString(
-                                $"KW {currentKw}",
-                                kwFont,
-                                Brushes.Black,
-                                kwRect,
-                                new StringFormat
-                                {
-                                    Alignment = StringAlignment.Center,
-                                    LineAlignment = StringAlignment.Center
-                                });
-
-                            currentKw =
-                                d < daysInYear - 1
-                                ? ISOWeek.GetWeekOfYear(firstOfYear.AddDays(d + 1))
-                                : -1;
-
+                            currentKw = d < daysInYear - 1 ? ISOWeek.GetWeekOfYear(firstOfYear.AddDays(d + 1)) : -1;
                             kwStartX = rect.Right;
                         }
                     }
@@ -523,17 +507,9 @@ namespace VacationApp
                 using (var brushDayBg = new SolidBrush(Color.White))
                 using (var penGrid = new Pen(Color.FromArgb(180, 180, 180)))
                 {
-                    var dayAreaRect = new Rectangle(
-                        0,
-                        bannerHeight + kwHeight,
-                        panelMonthHeader.Width,
-                        dayHeaderHeight);
+                    var dayAreaRect = new Rectangle(0, bannerHeight + kwHeight, panelMonthHeader.Width, dayHeaderHeight);
                     g.FillRectangle(brushDayBg, dayAreaRect);
-                    g.DrawLine(penGrid,
-                        0,
-                        bannerHeight + kwHeight,
-                        panelMonthHeader.Width,
-                        bannerHeight + kwHeight);
+                    g.DrawLine(penGrid, 0, bannerHeight + kwHeight, panelMonthHeader.Width, bannerHeight + kwHeight);
                 }
 
                 // Tage + Wochentage + Wochenendshading
@@ -555,31 +531,20 @@ namespace VacationApp
 
                         int x = rect.Left;
                         int w = rect.Width > 0 ? rect.Width : DayColumnWidth;
-                        var cellRect = new Rectangle(
-                            x,
-                            bannerHeight + kwHeight,
-                            w,
-                            dayHeaderHeight);
+                        var cellRect = new Rectangle(x, bannerHeight + kwHeight, w, dayHeaderHeight);
 
                         var date = firstOfYear.AddDays(d);
                         
-                        // Färbe nur den heutigen Tag grün (in der Tageszeile des Headers)
                         if (date == today)
                         {
                             g.FillRectangle(brushToday, cellRect);
                         }
-                        // Färbe Wochenenden grau
                         else if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                         {
                             g.FillRectangle(brushWeekend, cellRect);
                         }
 
-                        g.DrawRectangle(
-                            penGridLines,
-                            cellRect.Left,
-                            cellRect.Top,
-                            cellRect.Width - 1,
-                            cellRect.Height - 1);
+                        g.DrawRectangle(penGridLines, cellRect.Left, cellRect.Top, cellRect.Width - 1, cellRect.Height - 1);
 
                         var dayRect = new Rectangle(cellRect.Left, cellRect.Top + 2, cellRect.Width, (cellRect.Height / 2) - 2);
                         var weekdayRect = new Rectangle(cellRect.Left, cellRect.Top + (cellRect.Height / 2), cellRect.Width, (cellRect.Height / 2) - 2);
@@ -600,12 +565,7 @@ namespace VacationApp
                             if (lastRect.Width > 0)
                             {
                                 int xRight = lastRect.Right;
-                                g.DrawLine(
-                                    penGridLines,
-                                    xRight - 1,
-                                    bannerHeight,
-                                    xRight - 1,
-                                    panelMonthHeader.Height);
+                                g.DrawLine(penGridLines, xRight - 1, bannerHeight, xRight - 1, panelMonthHeader.Height);
                             }
                         }
                         catch { }
@@ -618,9 +578,7 @@ namespace VacationApp
             }
         }
 
-        private void DgvCalendar_RowPostPaint(
-            object? sender,
-            DataGridViewRowPostPaintEventArgs e)
+        private void DgvCalendar_RowPostPaint(object? sender, DataGridViewRowPostPaintEventArgs e)
         {
             int year = (int)nudYear.Value;
             DateTime firstOfYear = new DateTime(year, 1, 1);
@@ -631,39 +589,25 @@ namespace VacationApp
             for (int d = 0; d < daysInYear; d++)
             {
                 DateTime date = firstOfYear.AddDays(d);
+                bool isKwStart = d == 0 || date.DayOfWeek == DayOfWeek.Monday;
 
-                bool isKwStart =
-                    d == 0 ||
-                    date.DayOfWeek == DayOfWeek.Monday;
-
-                if (!isKwStart)
-                    continue;
+                if (!isKwStart) continue;
 
                 int colIndex = d + 1;
-
                 Rectangle rect;
 
                 try
                 {
-                    rect = dgvCalendar.GetCellDisplayRectangle(
-                        colIndex,
-                        e.RowIndex,
-                        true);
+                    rect = dgvCalendar.GetCellDisplayRectangle(colIndex, e.RowIndex, true);
                 }
                 catch
                 {
                     continue;
                 }
 
-                if (rect.Width <= 0)
-                    continue;
+                if (rect.Width <= 0) continue;
 
-                e.Graphics.DrawLine(
-                    kwPen,
-                    rect.Left,
-                    rect.Top,
-                    rect.Left,
-                    rect.Bottom);
+                e.Graphics.DrawLine(kwPen, rect.Left, rect.Top, rect.Left, rect.Bottom);
             }
         }
 
@@ -678,38 +622,25 @@ namespace VacationApp
             for (int d = 0; d < daysInYear; d++)
             {
                 DateTime date = firstOfYear.AddDays(d);
+                bool isKwStart = d == 0 || date.DayOfWeek == DayOfWeek.Monday;
 
-                bool isKwStart =
-                    d == 0 ||
-                    date.DayOfWeek == DayOfWeek.Monday;
-
-                if (!isKwStart)
-                    continue;
+                if (!isKwStart) continue;
 
                 int colIndex = d + 1;
-
                 Rectangle rect;
 
                 try
                 {
-                    rect = dgvCalendar.GetColumnDisplayRectangle(
-                        colIndex,
-                        true);
+                    rect = dgvCalendar.GetColumnDisplayRectangle(colIndex, true);
                 }
                 catch
                 {
                     continue;
                 }
 
-                if (rect.Width <= 0)
-                    continue;
+                if (rect.Width <= 0) continue;
 
-                e.Graphics.DrawLine(
-                    kwPen,
-                    rect.Left,
-                    0,
-                    rect.Left,
-                    dgvCalendar.DisplayRectangle.Height);
+                e.Graphics.DrawLine(kwPen, rect.Left, 0, rect.Left, dgvCalendar.DisplayRectangle.Height);
             }
         }
 
@@ -736,12 +667,17 @@ namespace VacationApp
             {
                 using var f = new Forms.VacationTypesForm();
                 f.ShowDialog(this);
-                // Reload Calendar um neue Farben zu zeigen
                 LoadCalendar((int)nudYear.Value);
             };
             menuOptions.DropDownItems.Add(menuVacationTypes);
 
             menu.Items.Add(menuOptions);
         }
+    }
+
+    public class HolidayRange
+    {
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
     }
 }
