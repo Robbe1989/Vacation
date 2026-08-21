@@ -11,6 +11,7 @@
             this.lblYear = new System.Windows.Forms.Label();
             this.nudYear = new System.Windows.Forms.NumericUpDown();
             this.btnManageVacations = new System.Windows.Forms.Button();
+            this.btnLoadHolidays = new System.Windows.Forms.Button();
             
             // Monats-Button Panel
             this.monthButtonPanel = new System.Windows.Forms.FlowLayoutPanel();
@@ -34,6 +35,7 @@
             this.panelTop.Controls.Add(this.lblYear);
             this.panelTop.Controls.Add(this.nudYear);
             this.panelTop.Controls.Add(this.btnManageVacations);
+            this.panelTop.Controls.Add(this.btnLoadHolidays);
             this.panelTop.BackColor = System.Drawing.Color.FromArgb(243, 243, 243);
 
             // lblYear
@@ -60,6 +62,17 @@
             this.btnManageVacations.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnManageVacations.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(200, 200, 200);
             this.btnManageVacations.FlatAppearance.BorderSize = 1;
+
+            // btnLoadHolidays
+            this.btnLoadHolidays.Text = "Ferien laden";
+            this.btnLoadHolidays.Location = new System.Drawing.Point(310, 6);
+            this.btnLoadHolidays.Size = new System.Drawing.Size(140, 26);
+            this.btnLoadHolidays.Name = "btnLoadHolidays";
+            this.btnLoadHolidays.BackColor = System.Drawing.Color.FromArgb(253, 253, 253);
+            this.btnLoadHolidays.ForeColor = System.Drawing.Color.Black;
+            this.btnLoadHolidays.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnLoadHolidays.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(200, 200, 200);
+            this.btnLoadHolidays.FlatAppearance.BorderSize = 1;
 
             // monthButtonPanel
             this.monthButtonPanel.Dock = System.Windows.Forms.DockStyle.Top;
@@ -141,6 +154,7 @@
         private System.Windows.Forms.Label lblYear;
         private System.Windows.Forms.NumericUpDown nudYear;
         private System.Windows.Forms.Button btnManageVacations;
+        private System.Windows.Forms.Button btnLoadHolidays;
 
         private System.Windows.Forms.FlowLayoutPanel monthButtonPanel;
         private System.Windows.Forms.Button[] monthButtons;

@@ -37,6 +37,15 @@ namespace VacationApp
                 f.ShowDialog(this);
                 LoadCalendar((int)nudYear.Value);
             };
+            btnLoadHolidays.Click += async (s, e) =>
+            {
+                btnLoadHolidays.Enabled = false;
+                btnLoadHolidays.Text = "Lädt...";
+                await LoadHolidays((int)nudYear.Value);
+                LoadCalendar((int)nudYear.Value);
+                btnLoadHolidays.Enabled = true;
+                btnLoadHolidays.Text = "Ferien laden";
+            };
 
             dgvCalendar.Scroll += (s, e) => panelMonthHeader.Invalidate();
             dgvCalendar.ColumnWidthChanged += (s, e) => panelMonthHeader.Invalidate();
@@ -81,43 +90,42 @@ namespace VacationApp
                         var json = await response.Content.ReadAsStringAsync();
                         System.Diagnostics.Debug.WriteLine($"API Response: {json}");
                         
-                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+                        var holidaysData = JsonSerializer.Deserialize<JsonElement>(json);
                         Holidays.Clear();
 
-                        if (holidaysData != null && holidaysData.ContainsKey("BW"))
+                        if (holidaysData.TryGetProperty("BW", out var bwData) && bwData.ValueKind == JsonValueKind.Array)
                         {
-                            var bwData = holidaysData["BW"];
-                            if (bwData.ValueKind == JsonValueKind.Array)
+                            foreach (var holiday in bwData.EnumerateArray())
                             {
-                                foreach (var holiday in bwData.EnumerateArray())
+                                if (holiday.TryGetProperty("start", out var startProp) &&
+                                    holiday.TryGetProperty("end", out var endProp))
                                 {
-                                    if (holiday.TryGetProperty("start", out var startProp) &&
-                                        holiday.TryGetProperty("end", out var endProp))
+                                    var startStr = startProp.GetString();
+                                    var endStr = endProp.GetString();
+                                    
+                                    if (DateTime.TryParse(startStr, out var start) &&
+                                        DateTime.TryParse(endStr, out var end))
                                     {
-                                        var startStr = startProp.GetString();
-                                        var endStr = endProp.GetString();
-                                        
-                                        if (DateTime.TryParseExact(startStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
-                                            DateTime.TryParseExact(endStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
-                                        {
-                                            Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
-                                            System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
-                                        }
+                                        Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
+                                        System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
                                     }
                                 }
                             }
                         }
                         System.Diagnostics.Debug.WriteLine($"Gesamte Ferien geladen: {Holidays.Count}");
+                        MessageBox.Show($"Ferien erfolgreich geladen! {Holidays.Count} Ferienzeiträume gefunden.");
                     }
                     else
                     {
                         System.Diagnostics.Debug.WriteLine($"API Error: {response.StatusCode}");
+                        MessageBox.Show($"Fehler beim Abrufen der Ferien: {response.StatusCode}");
                     }
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Ferien: {ex.Message}");
+                MessageBox.Show($"Fehler beim Laden der Ferien: {ex.Message}");
             }
         }
 
@@ -220,42 +228,7 @@ namespace VacationApp
                 };
                 dgvCalendar.Columns.Add(colTotal);
 
-                // Ferien-Reihe wird ZUERST hinzugefügt
-                object[] holidayValues = new object[1 + daysInYear + 1];
-                holidayValues[0] = "Ferien Baden-Württemberg";
-
-                for (int d = 0; d < daysInYear; d++)
-                {
-                    var date = firstOfYear.AddDays(d);
-                    var holiday = Holidays.FirstOrDefault(h => date >= h.StartDate && date <= h.EndDate);
-                    
-                    if (holiday != null)
-                    {
-                        holidayValues[1 + d] = "F";
-                    }
-                    else
-                    {
-                        holidayValues[1 + d] = "";
-                    }
-                }
-
-                int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
-
-                // Formatiere die Ferien-Reihe in rot
-                for (int d = 0; d < daysInYear; d++)
-                {
-                    if (!string.IsNullOrEmpty(holidayValues[1 + d].ToString()))
-                    {
-                        var cell = dgvCalendar.Rows[holidayRowIndex].Cells[1 + d];
-                        cell.Style.BackColor = Color.Red;
-                        cell.Style.SelectionBackColor = Color.Red;
-                        cell.Style.ForeColor = Color.White;
-                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
-                        cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
-                    }
-                }
-
-                // Jetzt werden die Mitarbeiter hinzugefügt
+                // Füge alle Mitarbeiter hinzu
                 foreach (var emp in employees)
                 {
                     object[] values = new object[1 + daysInYear + 1];
@@ -325,6 +298,41 @@ namespace VacationApp
                                     cell.Style.ForeColor = Color.White;
                             }
                         }
+                    }
+                }
+
+                // Ferien-Reihe wird ZULETZT hinzugefügt (nach alle Mitarbeitern)
+                object[] holidayValues = new object[1 + daysInYear + 1];
+                holidayValues[0] = "Ferien Baden-Württemberg";
+
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    var date = firstOfYear.AddDays(d);
+                    var holiday = Holidays.FirstOrDefault(h => date >= h.StartDate && date <= h.EndDate);
+                    
+                    if (holiday != null)
+                    {
+                        holidayValues[1 + d] = "F";
+                    }
+                    else
+                    {
+                        holidayValues[1 + d] = "";
+                    }
+                }
+
+                int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
+
+                // Formatiere die Ferien-Reihe in rot
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    if (!string.IsNullOrEmpty(holidayValues[1 + d].ToString()))
+                    {
+                        var cell = dgvCalendar.Rows[holidayRowIndex].Cells[1 + d];
+                        cell.Style.BackColor = Color.Red;
+                        cell.Style.SelectionBackColor = Color.Red;
+                        cell.Style.ForeColor = Color.White;
+                        cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                        cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
                     }
                 }
 
