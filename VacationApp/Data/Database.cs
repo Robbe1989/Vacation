@@ -158,18 +158,19 @@ namespace VacationApp.Data
             }
         }
 
-        private static void EnsureDefaultVacationTypes(SQLiteConnection conn)
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                INSERT OR IGNORE INTO VacationTypes (Id, Abbreviation, Name) 
-                VALUES 
-                    (1, 'U', 'Urlaub'),
-                    (2, 'K', 'Krankheit'),
-                    (3, 'A', 'Abwesenheit')
-            ";
-            cmd.ExecuteNonQuery();
-        }
+		// für Urlaubstypen
+		private static void EnsureDefaultVacationTypes(SQLiteConnection conn)
+		{
+			using var cmd = conn.CreateCommand();
+			cmd.CommandText = @"
+				INSERT OR IGNORE INTO VacationTypes (Id, Abbreviation, Name, ColorHex) 
+				VALUES 
+					(1, 'U', 'Urlaub', '#87CEEB'),
+					(2, 'K', 'Krankheit', '#FFB6C6'),
+					(3, 'A', 'Abwesenheit', '#D3D3D3')
+			";
+			cmd.ExecuteNonQuery();
+		}
 
         // Employees CRUD
         public static List<Employee> GetAllEmployees()

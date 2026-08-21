@@ -13,6 +13,8 @@ namespace VacationApp.Forms
             this.lblColor = new System.Windows.Forms.Label();
             this.panelColor = new System.Windows.Forms.Panel();
             this.btnColorPicker = new System.Windows.Forms.Button();
+            this.lblColorHex = new System.Windows.Forms.Label();
+            this.txtColorHex = new System.Windows.Forms.TextBox();
 
             this.panelButtons = new System.Windows.Forms.Panel();
             this.btnOK = new System.Windows.Forms.Button();
@@ -46,7 +48,7 @@ namespace VacationApp.Forms
             // lblColor
             this.lblColor.AutoSize = true;
             this.lblColor.Location = new System.Drawing.Point(12, 75);
-            this.lblColor.Text = "Farbe:";
+            this.lblColor.Text = "Farbe (Picker):";
             this.lblColor.Name = "lblColor";
 
             // panelColor
@@ -62,6 +64,20 @@ namespace VacationApp.Forms
             this.btnColorPicker.Location = new System.Drawing.Point(160, 72);
             this.btnColorPicker.Name = "btnColorPicker";
             this.btnColorPicker.Click += this.btnColorPicker_Click;
+
+            // lblColorHex
+            this.lblColorHex.AutoSize = true;
+            this.lblColorHex.Location = new System.Drawing.Point(12, 105);
+            this.lblColorHex.Text = "Farbe (HEX):";
+            this.lblColorHex.Name = "lblColorHex";
+
+            // txtColorHex
+            this.txtColorHex.Location = new System.Drawing.Point(100, 102);
+            this.txtColorHex.Size = new System.Drawing.Size(100, 20);
+            this.txtColorHex.MaxLength = 7;
+            this.txtColorHex.Name = "txtColorHex";
+            this.txtColorHex.Text = "#FFA500";
+            this.txtColorHex.TextChanged += this.txtColorHex_TextChanged;
 
             // panelButtons
             this.panelButtons.Dock = System.Windows.Forms.DockStyle.Bottom;
@@ -88,7 +104,7 @@ namespace VacationApp.Forms
             this.panelButtons.Controls.Add(this.btnCancel);
 
             // VacationTypeEditForm
-            this.ClientSize = new System.Drawing.Size(370, 170);
+            this.ClientSize = new System.Drawing.Size(370, 200);
             this.Controls.Add(this.lblAbbreviation);
             this.Controls.Add(this.txtAbbreviation);
             this.Controls.Add(this.lblName);
@@ -96,6 +112,8 @@ namespace VacationApp.Forms
             this.Controls.Add(this.lblColor);
             this.Controls.Add(this.panelColor);
             this.Controls.Add(this.btnColorPicker);
+            this.Controls.Add(this.lblColorHex);
+            this.Controls.Add(this.txtColorHex);
             this.Controls.Add(this.panelButtons);
             this.Name = "VacationTypeEditForm";
             this.Text = "Urlaubstyp bearbeiten";
@@ -115,6 +133,8 @@ namespace VacationApp.Forms
         private System.Windows.Forms.Label lblColor;
         private System.Windows.Forms.Panel panelColor;
         private System.Windows.Forms.Button btnColorPicker;
+        private System.Windows.Forms.Label lblColorHex;
+        private System.Windows.Forms.TextBox txtColorHex;
 
         private System.Windows.Forms.Panel panelButtons;
         private System.Windows.Forms.Button btnOK, btnCancel;
