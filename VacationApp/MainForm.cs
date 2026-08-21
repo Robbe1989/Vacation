@@ -70,6 +70,7 @@ namespace VacationApp
             {
                 using (var client = new HttpClient())
                 {
+                    client.Timeout = TimeSpan.FromSeconds(5); // Timeout nach 5 Sekunden
                     var response = await client.GetAsync($"https://ferien-api.de/api/v1/holidays/{year}/BW");
                     if (response.IsSuccessStatusCode)
                     {
@@ -95,6 +96,7 @@ namespace VacationApp
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Ferien: {ex.Message}");
+                // Fehler wird ignoriert, Ferien-Reihe wird trotzdem angezeigt, nur leer
             }
         }
 
@@ -126,8 +128,8 @@ namespace VacationApp
         {
             try
             {
-                // Lade Ferien asynchron
-                await LoadHolidays(year);
+                // Lade Ferien asynchron (ohne zu warten)
+                _ = LoadHolidays(year);
 
                 dgvCalendar.SuspendLayout();
                 dgvCalendar.Columns.Clear();
@@ -174,8 +176,8 @@ namespace VacationApp
                     {
                         col.DefaultCellStyle = new DataGridViewCellStyle
                         {
-                            BackColor = Color.FromArgb(160, 160, 160),
-                            SelectionBackColor = Color.FromArgb(160, 160, 160),
+                            BackColor = Color.FromArgb(220, 220, 220),
+                            SelectionBackColor = Color.FromArgb(220, 220, 220),
                             SelectionForeColor = Color.Black
                         };
                     }
@@ -274,22 +276,22 @@ namespace VacationApp
                     }
                 }
 
-                // Ferien-Reihe hinzufügen
+                // Ferien-Reihe wird IMMER angezeigt (auch wenn noch keine Daten geladen wurden)
+                object[] holidayValues = new object[1 + daysInYear + 1];
+                holidayValues[0] = "Ferien Baden-Württemberg";
+
+                for (int d = 0; d < daysInYear; d++)
+                {
+                    var date = firstOfYear.AddDays(d);
+                    bool isHoliday = Holidays.Any(h => date >= h.StartDate && date <= h.EndDate);
+                    holidayValues[1 + d] = isHoliday ? "F" : "";
+                }
+
+                int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
+
+                // Formatiere die Ferien-Reihe in rot (nur wenn Ferien vorhanden)
                 if (Holidays.Count > 0)
                 {
-                    object[] holidayValues = new object[1 + daysInYear + 1];
-                    holidayValues[0] = "Ferien Baden-Württemberg";
-
-                    for (int d = 0; d < daysInYear; d++)
-                    {
-                        var date = firstOfYear.AddDays(d);
-                        bool isHoliday = Holidays.Any(h => date >= h.StartDate && date <= h.EndDate);
-                        holidayValues[1 + d] = isHoliday ? "F" : "";
-                    }
-
-                    int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
-
-                    // Formatiere die Ferien-Reihe in rot
                     for (int d = 0; d < daysInYear; d++)
                     {
                         if (!string.IsNullOrEmpty(holidayValues[1 + d].ToString()))
@@ -353,7 +355,7 @@ namespace VacationApp
                 var colorOdd = Color.FromArgb(255, 250, 205);
                 var colorEven = Color.FromArgb(200, 235, 255);
 
-                using var penBanner = new Pen(Color.FromArgb(160, 160, 160));
+                using var penBanner = new Pen(Color.FromArgb(180, 180, 180));
                 using var sfCenterTop = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
                 // Monatsbanner (alternierend)
@@ -421,7 +423,7 @@ namespace VacationApp
                 // Tag-Header-Grund
                 // Kalenderwochen
                 using (var kwFont = new Font(this.Font.FontFamily, 8f, FontStyle.Bold))
-                using (var kwBrush = new SolidBrush(Color.FromArgb(160, 160, 160)))
+                using (var kwBrush = new SolidBrush(Color.FromArgb(220, 220, 220)))
                 using (var kwPen = new Pen(Color.Gray))
                 {
                     int currentKw = -1;
@@ -525,7 +527,7 @@ namespace VacationApp
 
                 // Tag-Header-Grund
                 using (var brushDayBg = new SolidBrush(Color.White))
-                using (var penGrid = new Pen(Color.FromArgb(160, 160, 160)))
+                using (var penGrid = new Pen(Color.FromArgb(180, 180, 180)))
                 {
                     var dayAreaRect = new Rectangle(
                         0,
@@ -544,7 +546,7 @@ namespace VacationApp
                 using (var smallFont = new Font(this.Font.FontFamily, Math.Max(8f, this.Font.Size - 1f)))
                 using (var weekdayFont = new Font(this.Font.FontFamily, Math.Max(7f, this.Font.Size - 3f)))
                 using (var penGridLines = new Pen(Color.Gray))
-                using (var brushWeekend = new SolidBrush(Color.FromArgb(160, 160, 160)))
+                using (var brushWeekend = new SolidBrush(Color.FromArgb(220, 220, 220)))
                 {
                     for (int d = 0; d < daysInYear; d++)
                     {

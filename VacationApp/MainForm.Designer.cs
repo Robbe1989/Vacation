@@ -34,13 +34,13 @@
             this.panelTop.Controls.Add(this.lblYear);
             this.panelTop.Controls.Add(this.nudYear);
             this.panelTop.Controls.Add(this.btnManageVacations);
-            this.panelTop.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
+            this.panelTop.BackColor = System.Drawing.Color.FromArgb(243, 243, 243);
 
             // lblYear
             this.lblYear.Text = "Jahr:";
             this.lblYear.AutoSize = true;
             this.lblYear.Location = new System.Drawing.Point(12, 10);
-            this.lblYear.ForeColor = System.Drawing.Color.White;
+            this.lblYear.ForeColor = System.Drawing.Color.Black;
 
             // nudYear
             this.nudYear.Minimum = 2000;
@@ -65,7 +65,7 @@
             this.monthButtonPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.monthButtonPanel.Height = 40;
             this.monthButtonPanel.AutoScroll = true;
-            this.monthButtonPanel.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
+            this.monthButtonPanel.BackColor = System.Drawing.Color.FromArgb(243, 243, 243);
             this.monthButtonPanel.Padding = new System.Windows.Forms.Padding(5);
             this.monthButtonPanel.Name = "monthButtonPanel";
 
@@ -98,7 +98,7 @@
             // panelMonthHeader
             this.panelMonthHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelMonthHeader.Height = 92;
-            this.panelMonthHeader.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
+            this.panelMonthHeader.BackColor = System.Drawing.Color.FromArgb(243, 243, 243);
             this.panelMonthHeader.Name = "panelMonthHeader";
 
             // dgvCalendar
@@ -120,7 +120,7 @@
 
             // MainForm
             this.ClientSize = new System.Drawing.Size(1200, 700);
-            this.BackColor = System.Drawing.Color.FromArgb(160, 160, 160);
+            this.BackColor = System.Drawing.Color.FromArgb(243, 243, 243);
             this.Controls.Add(this.dgvCalendar);
             this.Controls.Add(this.panelMonthHeader);
             this.Controls.Add(this.monthButtonPanel);
