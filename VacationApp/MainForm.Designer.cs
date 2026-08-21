@@ -53,7 +53,7 @@
             this.btnManageVacations.Location = new System.Drawing.Point(160, 6);
             this.btnManageVacations.Size = new System.Drawing.Size(140, 26);
             this.btnManageVacations.Name = "btnManageVacations";
-            this.btnManageVacations.BackColor = System.Drawing.Color.Red;
+            this.btnManageVacations.BackColor = System.Drawing.Color.LightGray;
             this.btnManageVacations.ForeColor = System.Drawing.Color.White;
 
             // monthButtonPanel
@@ -75,7 +75,7 @@
                 this.monthButtons[i].Text = monthNames[i];
                 this.monthButtons[i].Width = 75;
                 this.monthButtons[i].Height = 30;
-                this.monthButtons[i].BackColor = System.Drawing.Color.WhiteSmoke;
+                this.monthButtons[i].BackColor = System.Drawing.Color.LightGray;
                 this.monthButtons[i].FlatStyle = System.Windows.Forms.FlatStyle.Standard;
                 this.monthButtons[i].Margin = new System.Windows.Forms.Padding(2);
                 this.monthButtons[i].Name = "btn" + monthNames[i];
@@ -90,7 +90,7 @@
             // panelMonthHeader
             this.panelMonthHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelMonthHeader.Height = 92;
-            this.panelMonthHeader.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.panelMonthHeader.BackColor = System.Drawing.SystemColors.LightGray;
             this.panelMonthHeader.Name = "panelMonthHeader";
 
             // dgvCalendar
@@ -140,3 +140,8 @@
         private System.Windows.Forms.DataGridView dgvCalendar;
     }
 }
+
+
+
+
+

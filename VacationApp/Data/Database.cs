@@ -40,12 +40,6 @@ namespace VacationApp.Data
                         VacationDays INTEGER NOT NULL DEFAULT 20
                     );";
 
-                var createDepartments = @"
-                    CREATE TABLE IF NOT EXISTS Departments (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT NOT NULL
-                    );";
-
                 var createVacationTypes = @"
                     CREATE TABLE IF NOT EXISTS VacationTypes (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,9 +62,6 @@ namespace VacationApp.Data
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = createEmployees;
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = createDepartments;
                     cmd.ExecuteNonQuery();
 
                     cmd.CommandText = createVacationTypes;
@@ -179,9 +170,9 @@ namespace VacationApp.Data
                 cmd.CommandText = @"
                     INSERT OR IGNORE INTO VacationTypes (Id, Abbreviation, Name, ColorHex) 
                     VALUES 
-                        (1, 'U', 'Urlaub', '#C6E0B4'),
-                        (2, 'K', 'Krankheit', '#EDB1E4'),
-                        (3, '0.5', 'Halber Tag', '#B4C6E7')
+                        (1, 'U', 'Urlaub', '#87CEEB'),
+                        (2, 'K', 'Krankheit', '#FFB6C6'),
+                        (3, 'A', 'Abwesenheit', '#D3D3D3')
                 ";
                 cmd.ExecuteNonQuery();
             }
@@ -263,58 +254,6 @@ namespace VacationApp.Data
             conn.Open();
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "DELETE FROM Employees WHERE Id = @id;";
-            cmd.Parameters.AddWithValue("@id", id);
-            cmd.ExecuteNonQuery();
-        }
-
-        // Departments CRUD
-        public static List<Department> GetAllDepartments()
-        {
-            var list = new List<Department>();
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Id, Name FROM Departments ORDER BY Name;";
-            using var rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-            {
-                list.Add(new Department
-                {
-                    Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
-                    Name = rdr.IsDBNull(1) ? "" : rdr.GetString(1)
-                });
-            }
-            return list;
-        }
-
-        public static int AddDepartment(Department d)
-        {
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "INSERT INTO Departments (Name) VALUES (@name); SELECT last_insert_rowid();";
-            cmd.Parameters.AddWithValue("@name", d.Name ?? "");
-            var id = Convert.ToInt32(cmd.ExecuteScalar());
-            return id;
-        }
-
-        public static void UpdateDepartment(Department d)
-        {
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "UPDATE Departments SET Name=@name WHERE Id=@id;";
-            cmd.Parameters.AddWithValue("@name", d.Name ?? "");
-            cmd.Parameters.AddWithValue("@id", d.Id);
-            cmd.ExecuteNonQuery();
-        }
-
-        public static void DeleteDepartment(int id)
-        {
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DELETE FROM Departments WHERE Id = @id;";
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
         }
