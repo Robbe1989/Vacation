@@ -265,6 +265,61 @@ namespace VacationApp.Data
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
         }
+		
+		        // Vacation Types CRUD
+        public static List<VacationType> GetAllVacationTypes()
+        {
+            var list = new List<VacationType>();
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, Abbreviation, Name FROM VacationTypes ORDER BY Name;";
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                list.Add(new VacationType
+                {
+                    Id = rdr.IsDBNull(0) ? 0 : Convert.ToInt32(rdr[0]),
+                    Abbreviation = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
+                    Name = rdr.IsDBNull(2) ? "" : rdr.GetString(2)
+                });
+            }
+            return list;
+        }
+
+        public static int AddVacationType(VacationType vt)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "INSERT INTO VacationTypes (Abbreviation, Name) VALUES (@abbr, @name); SELECT last_insert_rowid();";
+            cmd.Parameters.AddWithValue("@abbr", vt.Abbreviation ?? "");
+            cmd.Parameters.AddWithValue("@name", vt.Name ?? "");
+            var id = Convert.ToInt32(cmd.ExecuteScalar());
+            return id;
+        }
+
+        public static void UpdateVacationType(VacationType vt)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE VacationTypes SET Abbreviation=@abbr, Name=@name WHERE Id=@id;";
+            cmd.Parameters.AddWithValue("@abbr", vt.Abbreviation ?? "");
+            cmd.Parameters.AddWithValue("@name", vt.Name ?? "");
+            cmd.Parameters.AddWithValue("@id", vt.Id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public static void DeleteVacationType(int id)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM VacationTypes WHERE Id = @id;";
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
 
         // Vacation Types CRUD
         public static List<VacationType> GetAllVacationTypes()

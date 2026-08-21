@@ -612,7 +612,7 @@ private void DgvCalendar_Paint(object? sender, PaintEventArgs e)
     }
 }
 
-        private void AddMenu()
+                private void AddMenu()
         {
             var menu = this.menuStrip1;
             menu.Items.Clear();
