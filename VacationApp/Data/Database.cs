@@ -21,182 +21,154 @@ namespace VacationApp.Data
 
         public static void Init()
         {
-            try
+            var dir = Path.GetDirectoryName(DbFile);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            using var conn = GetConnection();
+            conn.Open();
+
+            var createEmployees = @"
+                CREATE TABLE IF NOT EXISTS Employees (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL,
+                    Email TEXT,
+                    Department TEXT,
+                    StartDate TEXT,
+                    VacationDays INTEGER NOT NULL DEFAULT 20
+                );";
+
+            var createDepartments = @"
+                CREATE TABLE IF NOT EXISTS Departments (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL
+                );";
+
+            var createVacationTypes = @"
+                CREATE TABLE IF NOT EXISTS VacationTypes (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Abbreviation TEXT NOT NULL UNIQUE,
+                    Name TEXT NOT NULL
+                );";
+
+            var createVacations = @"
+                CREATE TABLE IF NOT EXISTS Vacations (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    EmployeeId INTEGER NOT NULL,
+                    StartDate TEXT NOT NULL,
+                    EndDate TEXT NOT NULL,
+                    VacationTypeId INTEGER,
+                    Comment TEXT,
+                    FOREIGN KEY(EmployeeId) REFERENCES Employees(Id),
+                    FOREIGN KEY(VacationTypeId) REFERENCES VacationTypes(Id)
+                );";
+
+            using (var cmd = conn.CreateCommand())
             {
-                var dir = Path.GetDirectoryName(DbFile);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                    Directory.CreateDirectory(dir);
+                cmd.CommandText = createEmployees;
+                cmd.ExecuteNonQuery();
 
-                using var conn = GetConnection();
-                conn.Open();
+                cmd.CommandText = createDepartments;
+                cmd.ExecuteNonQuery();
 
-                var createEmployees = @"
-                    CREATE TABLE IF NOT EXISTS Employees (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT NOT NULL,
-                        Email TEXT,
-                        Department TEXT,
-                        StartDate TEXT,
-                        VacationDays INTEGER NOT NULL DEFAULT 20
-                    );";
+                cmd.CommandText = createVacationTypes;
+                cmd.ExecuteNonQuery();
 
-                var createDepartments = @"
-                    CREATE TABLE IF NOT EXISTS Departments (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT NOT NULL
-                    );";
+                cmd.CommandText = createVacations;
+                cmd.ExecuteNonQuery();
+            }
 
-                var createVacationTypes = @"
-                    CREATE TABLE IF NOT EXISTS VacationTypes (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Abbreviation TEXT NOT NULL UNIQUE,
-                        Name TEXT NOT NULL
-                    );";
-
-                var createVacations = @"
-                    CREATE TABLE IF NOT EXISTS Vacations (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        EmployeeId INTEGER NOT NULL,
-                        StartDate TEXT NOT NULL,
-                        EndDate TEXT NOT NULL,
-                        VacationTypeId INTEGER,
-                        Comment TEXT,
-                        FOREIGN KEY(EmployeeId) REFERENCES Employees(Id),
-                        FOREIGN KEY(VacationTypeId) REFERENCES VacationTypes(Id)
-                    );";
-
-                using (var cmd = conn.CreateCommand())
+            // Stelle sicher, dass Standardurlaubstypen existieren
+            EnsureDefaultVacationTypes(conn);
+			
+			
+			// Migriere Farbe für VacationTypes falls nötig
+            using (var checkCmd = conn.CreateCommand())
+            {
+                checkCmd.CommandText = "PRAGMA table_info(VacationTypes);";
+                using var reader = checkCmd.ExecuteReader();
+                bool hasColorHex = false;
+                while (reader.Read())
                 {
-                    cmd.CommandText = createEmployees;
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = createDepartments;
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = createVacationTypes;
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = createVacations;
-                    cmd.ExecuteNonQuery();
-                }
-
-                // Stelle sicher, dass Standardurlaubstypen existieren
-                EnsureDefaultVacationTypes(conn);
-                
-                // Migriere Farbe für VacationTypes falls nötig
-                using (var checkCmd = conn.CreateCommand())
-                {
-                    checkCmd.CommandText = "PRAGMA table_info(VacationTypes);";
-                    using var reader = checkCmd.ExecuteReader();
-                    bool hasColorHex = false;
-                    while (reader.Read())
+                    var colName = reader["name"]?.ToString() ?? "";
+                    if (string.Equals(colName, "ColorHex", StringComparison.OrdinalIgnoreCase))
                     {
-                        var colName = reader["name"]?.ToString() ?? "";
-                        if (string.Equals(colName, "ColorHex", StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasColorHex = true;
-                            break;
-                        }
-                    }
-                    reader.Close();
-
-                    if (!hasColorHex)
-                    {
-                        using var alter = conn.CreateCommand();
-                        alter.CommandText = "ALTER TABLE VacationTypes ADD COLUMN ColorHex TEXT DEFAULT '#FFA500';";
-                        alter.ExecuteNonQuery();
+                        hasColorHex = true;
+                        break;
                     }
                 }
+                reader.Close();
 
-                // Ensure VacationDays column exists (legacy migrations)
-                using (var checkCmd = conn.CreateCommand())
+                if (!hasColorHex)
                 {
-                    checkCmd.CommandText = "PRAGMA table_info(Employees);";
-                    using var reader = checkCmd.ExecuteReader();
-                    bool hasVacationDays = false;
-                    while (reader.Read())
-                    {
-                        var colName = reader["name"]?.ToString() ?? "";
-                        if (string.Equals(colName, "VacationDays", StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasVacationDays = true;
-                            break;
-                        }
-                    }
-                    reader.Close();
-
-                    if (!hasVacationDays)
-                    {
-                        using var alter = conn.CreateCommand();
-                        alter.CommandText = "ALTER TABLE Employees ADD COLUMN VacationDays INTEGER NOT NULL DEFAULT 20;";
-                        alter.ExecuteNonQuery();
-                    }
-                }
-
-                // Migriere alte Vakationen falls nötig (VacationTypeId hinzufügen)
-                using (var checkCmd = conn.CreateCommand())
-                {
-                    checkCmd.CommandText = "PRAGMA table_info(Vacations);";
-                    using var reader = checkCmd.ExecuteReader();
-                    bool hasVacationTypeId = false;
-                    while (reader.Read())
-                    {
-                        var colName = reader["name"]?.ToString() ?? "";
-                        if (string.Equals(colName, "VacationTypeId", StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasVacationTypeId = true;
-                            break;
-                        }
-                    }
-                    reader.Close();
-
-                    if (!hasVacationTypeId)
-                    {
-                        using var alter = conn.CreateCommand();
-                        alter.CommandText = "ALTER TABLE Vacations ADD COLUMN VacationTypeId INTEGER DEFAULT 1;";
-                        alter.ExecuteNonQuery();
-                    }
+                    using var alter = conn.CreateCommand();
+                    alter.CommandText = "ALTER TABLE VacationTypes ADD COLUMN ColorHex TEXT DEFAULT '#FFA500';";
+                    alter.ExecuteNonQuery();
                 }
             }
-            catch (Exception ex)
+
+            // Ensure VacationDays column exists (legacy migrations)
+            using (var checkCmd = conn.CreateCommand())
             {
-                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "database_error.log");
-                string errorMsg = $"Database.Init() Fehler:\n{DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\n{ex.Message}\n\nStackTrace:\n{ex.StackTrace}";
-                try
+                checkCmd.CommandText = "PRAGMA table_info(Employees);";
+                using var reader = checkCmd.ExecuteReader();
+                bool hasVacationDays = false;
+                while (reader.Read())
                 {
-                    File.WriteAllText(logPath, errorMsg);
+                    var colName = reader["name"]?.ToString() ?? "";
+                    if (string.Equals(colName, "VacationDays", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasVacationDays = true;
+                        break;
+                    }
                 }
-                catch { }
-                throw;
+                reader.Close();
+
+                if (!hasVacationDays)
+                {
+                    using var alter = conn.CreateCommand();
+                    alter.CommandText = "ALTER TABLE Employees ADD COLUMN VacationDays INTEGER NOT NULL DEFAULT 20;";
+                    alter.ExecuteNonQuery();
+                }
+            }
+
+            // Migriere alte Vakationen falls nötig (VacationTypeId hinzufügen)
+            using (var checkCmd = conn.CreateCommand())
+            {
+                checkCmd.CommandText = "PRAGMA table_info(Vacations);";
+                using var reader = checkCmd.ExecuteReader();
+                bool hasVacationTypeId = false;
+                while (reader.Read())
+                {
+                    var colName = reader["name"]?.ToString() ?? "";
+                    if (string.Equals(colName, "VacationTypeId", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasVacationTypeId = true;
+                        break;
+                    }
+                }
+                reader.Close();
+
+                if (!hasVacationTypeId)
+                {
+                    using var alter = conn.CreateCommand();
+                    alter.CommandText = "ALTER TABLE Vacations ADD COLUMN VacationTypeId INTEGER DEFAULT 1;";
+                    alter.ExecuteNonQuery();
+                }
             }
         }
 
-        // für Urlaubstypen
         private static void EnsureDefaultVacationTypes(SQLiteConnection conn)
         {
-            try
-            {
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"
-                    INSERT OR IGNORE INTO VacationTypes (Id, Abbreviation, Name, ColorHex) 
-                    VALUES 
-                        (1, 'U', 'Urlaub', '#87CEEB'),
-                        (2, 'K', 'Krankheit', '#FFB6C6'),
-                        (3, 'A', 'Abwesenheit', '#D3D3D3')
-                ";
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "database_error.log");
-                string errorMsg = $"EnsureDefaultVacationTypes() Fehler:\n{DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\n{ex.Message}\n\nStackTrace:\n{ex.StackTrace}";
-                try
-                {
-                    File.WriteAllText(logPath, errorMsg);
-                }
-                catch { }
-                throw;
-            }
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT OR IGNORE INTO VacationTypes (Id, Abbreviation, Name) 
+                VALUES 
+                    (1, 'U', 'Urlaub'),
+                    (2, 'K', 'Krankheit'),
+                    (3, 'A', 'Abwesenheit')
+            ";
+            cmd.ExecuteNonQuery();
         }
 
         // Employees CRUD
@@ -319,6 +291,8 @@ namespace VacationApp.Data
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
         }
+		
+		
 
         // Vacation Types CRUD
         public static List<VacationType> GetAllVacationTypes()
@@ -342,7 +316,7 @@ namespace VacationApp.Data
             return list;
         }
 
-        public static int AddVacationType(VacationType vt)
+         public static int AddVacationType(VacationType vt)
         {
             using var conn = GetConnection();
             conn.Open();
