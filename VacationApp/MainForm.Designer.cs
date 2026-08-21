@@ -90,7 +90,7 @@
             // panelMonthHeader
             this.panelMonthHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelMonthHeader.Height = 92;
-            this.panelMonthHeader.BackColor = System.Drawing.SystemColors.LightGray;
+            this.panelMonthHeader.BackColor = System.Drawing.Color.LightGray;
             this.panelMonthHeader.Name = "panelMonthHeader";
 
             // dgvCalendar
@@ -140,8 +140,3 @@
         private System.Windows.Forms.DataGridView dgvCalendar;
     }
 }
-
-
-
-
-

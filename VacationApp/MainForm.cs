@@ -656,14 +656,6 @@ namespace VacationApp
 
             var menuOptions = new ToolStripMenuItem("Optionen");
             
-            var menuDepartments = new ToolStripMenuItem("Abteilungen");
-            menuDepartments.Click += (s, e) =>
-            {
-                using var f = new Forms.DepartmentsForm();
-                f.ShowDialog(this);
-            };
-            menuOptions.DropDownItems.Add(menuDepartments);
-
             var menuVacationTypes = new ToolStripMenuItem("Urlaubstypen");
             menuVacationTypes.Click += (s, e) =>
             {

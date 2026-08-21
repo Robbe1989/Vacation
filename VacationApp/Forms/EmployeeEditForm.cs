@@ -15,15 +15,6 @@ namespace VacationApp.Forms
 
             Database.Init();
 
-            // Load departments
-            var depts = Database.GetAllDepartments();
-            cmbDepartment.Items.Clear();
-            foreach (var d in depts)
-                cmbDepartment.Items.Add(d.Name);
-
-            if (cmbDepartment.Items.Count > 0)
-                cmbDepartment.SelectedIndex = 0;
-
             if (e == null)
             {
                 Employee = new Employee();
@@ -34,8 +25,6 @@ namespace VacationApp.Forms
                 Employee = e;
                 txtName.Text = Employee.Name;
                 txtEmail.Text = Employee.Email;
-                if (!string.IsNullOrEmpty(Employee.Department) && cmbDepartment.Items.Contains(Employee.Department))
-                    cmbDepartment.SelectedItem = Employee.Department;
                 nudVacationDays.Value = Math.Max(nudVacationDays.Minimum, Math.Min(nudVacationDays.Maximum, Employee.VacationDays));
             }
         }
@@ -44,7 +33,6 @@ namespace VacationApp.Forms
         {
             Employee.Name = txtName.Text.Trim();
             Employee.Email = txtEmail.Text.Trim();
-            Employee.Department = cmbDepartment.SelectedItem?.ToString() ?? "";
             Employee.VacationDays = (int)nudVacationDays.Value;
 
             DialogResult = DialogResult.OK;
