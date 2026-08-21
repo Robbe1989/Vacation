@@ -74,19 +74,24 @@ namespace VacationApp
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(5); // Timeout nach 5 Sekunden
-                    // URL mit dynamischem Jahr
-                    var url = $"https://www.ferien-api.maxleistner.de/api/v2/{year}?states=BW";
+                    // URL mit dynamischem Jahr - API gibt direktes Array zurück
+                    var url = $"https://www.ferien-api.maxleistner.de/api/v2.1/{year}?states=BW";
                     var response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode)
                     {
                         var json = await response.Content.ReadAsStringAsync();
-                        var holidaysData = JsonSerializer.Deserialize<JsonElement>(json);
+                        System.Diagnostics.Debug.WriteLine($"API Response: {json}");
+                        
+                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
                         Holidays.Clear();
 
-                        // Die API gibt die Daten in einem anderen Format zurück
-                        if (holidaysData.TryGetProperty("BW", out var bwData) && bwData.ValueKind == JsonValueKind.Array)
+                        // Neue API-Version: Array direkt unter "BW"
+                        if (holidaysData != null && holidaysData.ContainsKey("BW"))
                         {
-                            foreach (var holiday in bwData.EnumerateArray())
+                            var bwDataJson = holidaysData["BW"].ToString();
+                            var bwArray = JsonSerializer.Deserialize<JsonElement[]>(bwDataJson);
+                            
+                            foreach (var holiday in bwArray)
                             {
                                 if (holiday.TryGetProperty("start", out var startProp) &&
                                     holiday.TryGetProperty("end", out var endProp))
@@ -94,8 +99,8 @@ namespace VacationApp
                                     var startStr = startProp.GetString();
                                     var endStr = endProp.GetString();
                                     
-                                    if (DateTime.TryParse(startStr, out var start) &&
-                                        DateTime.TryParse(endStr, out var end))
+                                    if (DateTime.TryParseExact(startStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
+                                        DateTime.TryParseExact(endStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
                                     {
                                         Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
                                         System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
@@ -104,6 +109,10 @@ namespace VacationApp
                             }
                         }
                         System.Diagnostics.Debug.WriteLine($"Gesamte Ferien geladen: {Holidays.Count}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"API Error: {response.StatusCode}");
                     }
                 }
             }
@@ -187,18 +196,8 @@ namespace VacationApp
                         ToolTipText = date.ToString("dd.MM.yyyy")
                     };
 
-                    // Färbung der Spalte basierend auf Wochenende oder heutiger Tag
-                    if (date == today)
-                    {
-                        // Heutiger Tag: Grün
-                        col.DefaultCellStyle = new DataGridViewCellStyle
-                        {
-                            BackColor = Color.LimeGreen,
-                            SelectionBackColor = Color.LimeGreen,
-                            SelectionForeColor = Color.Black
-                        };
-                    }
-                    else if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+                    // Färbung der Spalte basierend auf Wochenende (nicht heutiger Tag in der Datenzeile)
+                    if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                     {
                         // Wochenende: Grau
                         col.DefaultCellStyle = new DataGridViewCellStyle
@@ -619,7 +618,7 @@ namespace VacationApp
 
                         var date = firstOfYear.AddDays(d);
                         
-                        // Färbe heutigen Tag grün
+                        // Färbe nur den heutigen Tag grün (in der Tageszeile des Headers)
                         if (date == today)
                         {
                             g.FillRectangle(brushToday, cellRect);
