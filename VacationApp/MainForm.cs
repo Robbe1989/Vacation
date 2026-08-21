@@ -11,8 +11,6 @@ namespace VacationApp
     public partial class MainForm : Form
     {
         private const int DayColumnWidth = 28;
-        private FlowLayoutPanel monthButtonPanel;
-        private Button[] monthButtons;
 
         public MainForm()
         {
@@ -24,9 +22,6 @@ namespace VacationApp
             dgvCalendar.DefaultCellStyle.SelectionBackColor = Color.White;
             dgvCalendar.DefaultCellStyle.SelectionForeColor = Color.Black;
             dgvCalendar.ClearSelection();
-
-            // Monats-Button Panel hinzufügen
-            AddMonthButtonPanel();
 
             // Events
             nudYear.ValueChanged += (s, e) => LoadCalendar((int)nudYear.Value);
@@ -61,71 +56,6 @@ namespace VacationApp
                     }
                 }));
             };
-        }
-
-        private void AddMonthButtonPanel()
-        {
-            // FlowLayoutPanel für die Monats-Buttons
-            monthButtonPanel = new FlowLayoutPanel
-            {
-                AutoScroll = true,
-                Height = 35,
-                Dock = DockStyle.Top,
-                BackColor = Color.LightGray,
-                Margin = new Padding(0),
-                Padding = new Padding(5)
-            };
-
-            // Array für die Monats-Buttons
-            monthButtons = new Button[12];
-            string[] monthNames = { "Januar", "Februar", "März", "April", "Mai", "Juni", 
-                                   "Juli", "August", "September", "Oktober", "November", "Dezember" };
-
-            for (int i = 0; i < 12; i++)
-            {
-                int monthIndex = i; // Für Closure
-                monthButtons[i] = new Button
-                {
-                    Text = monthNames[i],
-                    Width = 70,
-                    Height = 25,
-                    Tag = i + 1,
-                    BackColor = Color.WhiteSmoke,
-                    FlatStyle = FlatStyle.Standard,
-                    Margin = new Padding(2)
-                };
-
-                monthButtons[i].Click += (s, e) => ScrollToMonth(monthIndex + 1);
-                monthButtonPanel.Controls.Add(monthButtons[i]);
-            }
-
-            // Panel zum Formular hinzufügen (vor dem panelMonthHeader)
-            this.Controls.Add(monthButtonPanel);
-            this.Controls.SetChildIndex(monthButtonPanel, this.Controls.GetChildIndex(panelMonthHeader));
-        }
-
-        private void ScrollToMonth(int month)
-        {
-            try
-            {
-                int year = (int)nudYear.Value;
-                var firstOfYear = new DateTime(year, 1, 1);
-                var monthDate = new DateTime(year, month, 1);
-                
-                // Berechne den Spaltenindex für den ersten Tag des Monats
-                int dayIndex = (int)(monthDate - firstOfYear).TotalDays;
-                int columnIndex = dayIndex + 1; // +1 wegen der Mitarbeiter-Spalte
-
-                // Scrolle zur entsprechenden Spalte
-                if (columnIndex >= 0 && columnIndex < dgvCalendar.Columns.Count)
-                {
-                    dgvCalendar.FirstDisplayedScrollingColumnIndex = columnIndex;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Fehler beim Scrollen zum Monat: " + ex.Message);
-            }
         }
 
         private void LoadCalendar(int year)
