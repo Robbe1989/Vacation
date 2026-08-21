@@ -518,11 +518,8 @@ private void DgvCalendar_CellPainting(object? sender, DataGridViewCellPaintingEv
     if (!isKwStart && !isKwEnd)
         return;
 
-    e.Paint(e.CellBounds, e.PaintParts);
-
     using var kwPen = new Pen(Color.Black, 2f);
 
-    // linke KW-Grenze
     if (isKwStart)
     {
         e.Graphics.DrawLine(
@@ -533,7 +530,6 @@ private void DgvCalendar_CellPainting(object? sender, DataGridViewCellPaintingEv
             e.CellBounds.Bottom);
     }
 
-    // rechte KW-Grenze
     if (isKwEnd)
     {
         e.Graphics.DrawLine(
@@ -543,8 +539,6 @@ private void DgvCalendar_CellPainting(object? sender, DataGridViewCellPaintingEv
             e.CellBounds.Right - 1,
             e.CellBounds.Bottom);
     }
-
-    e.Handled = true;
 }
 
         private void AddMenu()
