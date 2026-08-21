@@ -71,22 +71,30 @@ namespace VacationApp
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(5); // Timeout nach 5 Sekunden
-                    var response = await client.GetAsync($"https://ferien-api.de/api/v1/holidays/{year}/BW");
+                    // URL mit dynamischem Jahr
+                    var url = $"https://www.ferien-api.maxleistner.de/api/v2/{year}?states=BW";
+                    var response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode)
                     {
                         var json = await response.Content.ReadAsStringAsync();
-                        var holidays = JsonSerializer.Deserialize<List<JsonElement>>(json);
+                        var holidaysData = JsonSerializer.Deserialize<JsonElement>(json);
                         Holidays.Clear();
 
-                        foreach (var holiday in holidays)
+                        // Die API gibt die Daten in einem anderen Format zurück
+                        if (holidaysData.TryGetProperty("BW", out var bwData))
                         {
-                            if (holiday.TryGetProperty("start", out var startProp) &&
-                                holiday.TryGetProperty("end", out var endProp))
+                            var holidays = JsonSerializer.Deserialize<List<JsonElement>>(bwData.GetRawText());
+                            
+                            foreach (var holiday in holidays)
                             {
-                                if (DateTime.TryParse(startProp.GetString(), out var start) &&
-                                    DateTime.TryParse(endProp.GetString(), out var end))
+                                if (holiday.TryGetProperty("start", out var startProp) &&
+                                    holiday.TryGetProperty("end", out var endProp))
                                 {
-                                    Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
+                                    if (DateTime.TryParse(startProp.GetString(), out var start) &&
+                                        DateTime.TryParse(endProp.GetString(), out var end))
+                                    {
+                                        Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
+                                    }
                                 }
                             }
                         }
@@ -128,7 +136,7 @@ namespace VacationApp
         {
             try
             {
-                // Lade Ferien asynchron (ohne zu warten)
+                // Lade Ferien asynchron (ohne zu warten) - mit aktuellem Jahr
                 _ = LoadHolidays(year);
 
                 dgvCalendar.SuspendLayout();
@@ -283,8 +291,32 @@ namespace VacationApp
                 for (int d = 0; d < daysInYear; d++)
                 {
                     var date = firstOfYear.AddDays(d);
-                    bool isHoliday = Holidays.Any(h => date >= h.StartDate && date <= h.EndDate);
-                    holidayValues[1 + d] = isHoliday ? "F" : "";
+                    
+                    // Suche nach Ferien, die diesen Tag abdecken
+                    var holiday = Holidays.FirstOrDefault(h => date >= h.StartDate && date <= h.EndDate);
+                    
+                    if (holiday != null)
+                    {
+                        // Zeige Startdatum am ersten Tag der Ferien
+                        if (date == holiday.StartDate)
+                        {
+                            holidayValues[1 + d] = holiday.StartDate.ToString("dd.MM");
+                        }
+                        // Zeige Enddatum am letzten Tag der Ferien
+                        else if (date == holiday.EndDate)
+                        {
+                            holidayValues[1 + d] = holiday.EndDate.ToString("dd.MM");
+                        }
+                        // Andere Tage: einfach "F" für Ferien
+                        else
+                        {
+                            holidayValues[1 + d] = "F";
+                        }
+                    }
+                    else
+                    {
+                        holidayValues[1 + d] = "";
+                    }
                 }
 
                 int holidayRowIndex = dgvCalendar.Rows.Add(holidayValues);
