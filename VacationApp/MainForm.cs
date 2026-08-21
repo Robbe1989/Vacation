@@ -74,7 +74,7 @@ namespace VacationApp
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(5); // Timeout nach 5 Sekunden
-                    // URL mit dynamischem Jahr - API gibt direktes Array zurück
+                    // URL mit dynamischem Jahr
                     var url = $"https://www.ferien-api.maxleistner.de/api/v2/{year}?states=BW";
                     var response = await client.GetAsync(url);
                     if (response.IsSuccessStatusCode)
@@ -82,28 +82,29 @@ namespace VacationApp
                         var json = await response.Content.ReadAsStringAsync();
                         System.Diagnostics.Debug.WriteLine($"API Response: {json}");
                         
-                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+                        var holidaysData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
                         Holidays.Clear();
 
-                        // Neue API-Version: Array direkt unter "BW"
+                        // Die API gibt die Daten unter "BW" zurück
                         if (holidaysData != null && holidaysData.ContainsKey("BW"))
                         {
-                            var bwDataJson = holidaysData["BW"].ToString();
-                            var bwArray = JsonSerializer.Deserialize<JsonElement[]>(bwDataJson);
-                            
-                            foreach (var holiday in bwArray)
+                            var bwData = holidaysData["BW"];
+                            if (bwData.ValueKind == JsonValueKind.Array)
                             {
-                                if (holiday.TryGetProperty("start", out var startProp) &&
-                                    holiday.TryGetProperty("end", out var endProp))
+                                foreach (var holiday in bwData.EnumerateArray())
                                 {
-                                    var startStr = startProp.GetString();
-                                    var endStr = endProp.GetString();
-                                    
-                                    if (DateTime.TryParseExact(startStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
-                                        DateTime.TryParseExact(endStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
+                                    if (holiday.TryGetProperty("start", out var startProp) &&
+                                        holiday.TryGetProperty("end", out var endProp))
                                     {
-                                        Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
-                                        System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
+                                        var startStr = startProp.GetString();
+                                        var endStr = endProp.GetString();
+                                        
+                                        if (DateTime.TryParseExact(startStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) &&
+                                            DateTime.TryParseExact(endStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
+                                        {
+                                            Holidays.Add(new HolidayRange { StartDate = start, EndDate = end });
+                                            System.Diagnostics.Debug.WriteLine($"Ferien geladen: {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}");
+                                        }
                                     }
                                 }
                             }
