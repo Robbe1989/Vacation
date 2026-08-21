@@ -16,11 +16,6 @@ namespace VacationApp
     {
         private const int DayColumnWidth = 28;
         private Dictionary<int, VacationType> VacationTypesCache = new Dictionary<int, VacationType>();
-		private class FerienApiEintrag
-{
-    public DateTime start { get; set; }
-    public DateTime end { get; set; }
-}
         private List<HolidayRange> Holidays = new List<HolidayRange>();
 
         public MainForm()
@@ -172,35 +167,11 @@ namespace VacationApp
                 MessageBox.Show("Fehler beim Scrollen zum Monat: " + ex.Message);
             }
         }
-private async Task<List<(DateTime Start, DateTime Ende)>> HoleFerienAsync(int year)
-{
-    try
-    {
-        string url = $"https://schulferien-api.de/api/v2/{year}?states=BW";
 
-        using HttpClient client = new();
-
-        string json = await client.GetStringAsync(url);
-
-        var ferien = JsonSerializer.Deserialize<List<FerienApiEintrag>>(json);
-
-        return ferien?
-            .Select(f => (f.start.Date, f.end.Date))
-            .ToList()
-            ?? new List<(DateTime, DateTime)>();
-    }
-    catch
-    {
-        return new List<(DateTime, DateTime)>();
-    }
-}
-        private async void LoadCalendar(int year)
+        private void LoadCalendar(int year)
         {
             try
             {
-                // Lade Ferien asynchron
-                _ = LoadHolidays(year);
-
                 dgvCalendar.SuspendLayout();
                 dgvCalendar.Columns.Clear();
                 dgvCalendar.Rows.Clear();
@@ -218,7 +189,6 @@ private async Task<List<(DateTime Start, DateTime Ende)>> HoleFerienAsync(int ye
 
                 int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
                 var firstOfYear = new DateTime(year, 1, 1);
-				var ferien = HoleFerienAsync(year).Result;
                 var today = DateTime.Today;
 
                 var colName = new DataGridViewTextBoxColumn
@@ -309,19 +279,8 @@ private async Task<List<(DateTime Start, DateTime Ende)>> HoleFerienAsync(int ye
                             values[1 + d] = abbreviation;
                             total++;
                         }
-                        else
-{
-    bool istFerienTag = ferien.Any(f =>
-        firstOfYear.AddDays(d) >= f.Start &&
-        firstOfYear.AddDays(d) <= f.Ende);
-
-    values[1 + d] = "";
-
-    if (istFerienTag)
-    {
-        // wird später eingefärbt
-    }
-}
+                        else 
+                            values[1 + d] = "";
                     }
                     values[1 + daysInYear] = total > 0 ? total.ToString() : "";
 
@@ -330,24 +289,29 @@ private async Task<List<(DateTime Start, DateTime Ende)>> HoleFerienAsync(int ye
                     if (total > 0)
                     {
                         for (int d = 0; d < daysInYear; d++)
-{
-    DateTime tag = firstOfYear.AddDays(d);
+                        {
+                            if (dayVacations.ContainsKey(d))
+                            {
+                                var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
+                                var vacation = dayVacations[d];
+                                
+                                Color vacColor = Color.LightSalmon;
+                                if (VacationTypesCache.ContainsKey(vacation.VacationTypeId))
+                                {
+                                    vacColor = VacationTypesCache[vacation.VacationTypeId].GetColor();
+                                }
 
-    bool istFerienTag = ferien.Any(f =>
-        tag >= f.Start &&
-        tag <= f.Ende);
-
-    if (istFerienTag)
-    {
-        var cell = dgvCalendar.Rows[rowIndex].Cells[1 + d];
-
-        if (string.IsNullOrEmpty(cell.Value?.ToString()))
-        {
-            cell.Style.BackColor = Color.LightYellow;
-            cell.Style.SelectionBackColor = Color.LightYellow;
-        }
-    }
-}
+                                cell.Style.BackColor = vacColor;
+                                cell.Style.SelectionBackColor = vacColor;
+                                cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                                cell.Style.Font = new Font(dgvCalendar.Font.FontFamily, dgvCalendar.Font.Size - 1);
+                                
+                                if (IsColorLight(vacColor))
+                                    cell.Style.ForeColor = Color.Black;
+                                else
+                                    cell.Style.ForeColor = Color.White;
+                            }
+                        }
                     }
                 }
 
